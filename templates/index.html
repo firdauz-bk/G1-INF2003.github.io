@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build-a-Car</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        h1 { color: #333; }
+        form { max-width: 500px; margin: 0 auto; }
+        label { display: block; margin-top: 10px; }
+        select { width: 100%; padding: 5px; margin-top: 5px; }
+        button { display: block; width: 100%; padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-top: 20px; }
+        #result { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Build Your Car</h1>
+    <form id="carForm">
+        {% for component, options in components.items() %}
+        <label for="{{ component }}">Select {{ component }}:</label>
+        <select name="{{ component }}" id="{{ component }}">
+            {% for option in options %}
+            <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+        </select>
+        {% endfor %}
+        <button type="submit">Build Car</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        $(document).ready(function() {
+            $('#carForm').on('submit', function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '/build_car',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        $('#result').text('Your car has been built: ' + JSON.stringify(response.car));
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
