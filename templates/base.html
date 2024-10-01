@@ -15,6 +15,7 @@
                 {% if current_user.admin %}
                     <li><a href="{{ url_for('admin') }}">Admin</a></li>
                 {% endif %}
+                <li><a href="{{ url_for('post') }}">Create Post</a></li>
                 <li><a href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}
                 <li><a href="{{ url_for('login') }}">Login</a></li>
