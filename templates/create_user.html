@@ -1,0 +1,16 @@
+<!-- create_user.html -->
+{% extends "base.html" %}
+{% block content %}
+    <h1>Create User</h1>
+    <form method="POST">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <label for="admin">Admin:</label>
+        <input type="checkbox" id="admin" name="admin">
+        <button type="submit">Create User</button>
+    </form>
+{% endblock %}
