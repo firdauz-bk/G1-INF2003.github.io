@@ -29,6 +29,16 @@ def init_db():
                 admin BOOLEAN DEFAULT FALSE
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS posts (
+                post_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
+            )
+        ''')
         conn.commit()
         conn.close()
 
@@ -202,6 +212,46 @@ def delete_user(user_id):
         flash('User not found')
     return redirect(url_for('admin'))
 
+# Route to create a new post
+@app.route('/createpost', methods=['GET', 'POST'])
+@login_required
+def create_post():  # Updated function name to 'create_post'
+    if request.method == 'POST':
+        # Retrieve form data
+        title = request.form['title']
+        description = request.form['description']
+
+        # Validate inputs
+        if not title or not description:
+            flash('Title and Description are required fields!')
+            return redirect(url_for('create_post'))  # Use 'create_post' to match function name
+
+        # Insert the new post into the database
+        conn = get_db_connection()
+        conn.execute('INSERT INTO posts (title, description, user_id) VALUES (?, ?, ?)',
+                     (title, description, current_user.id))
+        conn.commit()
+        conn.close()
+
+        # Show success message and redirect to the forum page
+        flash('Post created successfully!')
+        return redirect(url_for('forum'))  # Redirect to 'forum' page to view posts
+
+    # Render the post creation form
+    return render_template('createpost.html')
+
+@app.route('/forum')
+def forum():
+    conn = get_db_connection()
+    # Retrieve posts and join with user table to get username
+    posts = conn.execute('''
+        SELECT p.post_id, p.title, p.description, p.created_at, u.username 
+        FROM posts p 
+        JOIN user u ON p.user_id = u.user_id
+        ORDER BY p.created_at DESC
+    ''').fetchall()
+    conn.close()
+    return render_template('forum.html', posts=posts)
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
