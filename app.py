@@ -19,13 +19,18 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
-    conn.execute('''CREATE TABLE IF NOT EXISTS car_builds
-                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                     brand TEXT,
-                     body TEXT,
-                     color TEXT,
-                     wheels TEXT)''')
+
+    # Read the SQL file
+    with open("schema.sql", 'r') as sql_file:
+        sql_script = sql_file.read()
+
+    # Execute the SQL script from the file
+    conn.executescript(sql_script)
+
+    # Commit the changes and close the connection
+    conn.commit()
     conn.close()
+
 
 @app.route('/')
 def index():
