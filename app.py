@@ -39,6 +39,18 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
             )
         ''')
+        # Create comments table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS comments (
+                comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT NOT NULL,
+                user_id INTEGER NOT NULL,
+                post_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE
+            )
+        ''')
         conn.commit()
         conn.close()
 
@@ -240,6 +252,43 @@ def create_post():  # Updated function name to 'create_post'
     # Render the post creation form
     return render_template('createpost.html')
 
+# Route to create a new comment
+@app.route('/createcomment/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def createcomment(post_id):
+    if request.method == 'POST':
+        content = request.form['content']
+        user_id = current_user.id
+
+        # Validate input
+        if not content:
+            flash('Comment cannot be empty.')
+            return redirect(url_for('createcomment', post_id=post_id))
+
+        # Insert the new comment into the database
+        conn = get_db_connection()
+        conn.execute('INSERT INTO comments (content, user_id, post_id) VALUES (?, ?, ?)',
+                     (content, user_id, post_id))
+        conn.commit()
+        conn.close()
+
+        # Redirect to the forum or post page after adding a comment
+        flash('Comment added successfully!')
+        return redirect(url_for('forum'))
+
+    # Retrieve all comments related to the post
+    conn = get_db_connection()
+    comments = conn.execute('''
+        SELECT c.comment_id, c.content, c.created_at, u.username 
+        FROM comments c 
+        JOIN user u ON c.user_id = u.user_id
+        WHERE c.post_id = ?
+        ORDER BY c.created_at DESC
+    ''', (post_id,)).fetchall()
+    conn.close()
+
+    return render_template('createcomment.html', comments=comments, post_id=post_id)
+
 @app.route('/forum')
 def forum():
     conn = get_db_connection()
@@ -250,8 +299,26 @@ def forum():
         JOIN user u ON p.user_id = u.user_id
         ORDER BY p.created_at DESC
     ''').fetchall()
+    
+    # Fetch comments for each post
+    posts_with_comments = []
+    for post in posts:
+        comments = conn.execute('''
+            SELECT c.comment_id, c.content, c.created_at, u.username 
+            FROM comments c 
+            JOIN user u ON c.user_id = u.user_id
+            WHERE c.post_id = ?
+            ORDER BY c.created_at DESC
+        ''', (post['post_id'],)).fetchall()
+        
+        posts_with_comments.append({
+            'post': post,
+            'comments': comments
+        })
+        
     conn.close()
-    return render_template('forum.html', posts=posts)
+    return render_template('forum.html', posts_with_comments=posts_with_comments)
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)

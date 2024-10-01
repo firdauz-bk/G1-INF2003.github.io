@@ -5,13 +5,27 @@
 {% block content %}
     <h1>Posts</h1>
     <li><a href="{{ url_for('create_post') }}">Create Post</a></li>
-    {% if posts %}
+    {% if posts_with_comments %}
         <ul>
-            {% for post in posts %}
+            {% for item in posts_with_comments %}
                 <li>
-                    <h3>{{ post['title'] }}</h3>
-                    <p>{{ post['description'] }}</p>
-                    <small>Posted by {{ post['username'] }} on {{ post['created_at'] }}</small>
+                    <h3>{{ item.post['title'] }}</h3>
+                    <p>{{ item.post['description'] }}</p>
+                    <small>Posted by {{ item.post['username'] }} on {{ item.post['created_at'] }}</small>
+                    <br>
+                    <a href="{{ url_for('createcomment', post_id=item.post['post_id']) }}">Create Comment</a>
+                    
+                    <!-- Display comments for this post -->
+                    <h4>Comments:</h4>
+                    <ul>
+                        {% for comment in item.comments %}
+                            <li>
+                                <strong>{{ comment['username'] }}:</strong> {{ comment['content'] }} <small>({{ comment['created_at'] }})</small>
+                            </li>
+                        {% else %}
+                            <li>No comments yet. Be the first to comment!</li>
+                        {% endfor %}
+                    </ul>
                 </li>
             {% endfor %}
         </ul>
