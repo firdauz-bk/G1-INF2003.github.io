@@ -1,0 +1,18 @@
+<!-- comment.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Comments</h1>
+{% for comment in comments %}
+    <li>{{ comment.username }}: {{ comment.content }} ({{ comment.created_at }})        
+    {% endfor %}
+</ul>
+
+<form method="POST" action="{{ url_for('create_comment', post_id=post_id) }}">
+    <textarea name="content" placeholder="Add your comment here..."></textarea>
+    <button type="submit">Submit</button>
+</form>
+{% endblock %}
+
+
+

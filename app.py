@@ -253,9 +253,9 @@ def create_post():  # Updated function name to 'create_post'
     return render_template('createpost.html')
 
 # Route to create a new comment
-@app.route('/createcomment/<int:post_id>', methods=['GET', 'POST'])
+@app.route('/create_comment/<int:post_id>', methods=['GET', 'POST'])
 @login_required
-def createcomment(post_id):
+def create_comment(post_id):
     if request.method == 'POST':
         content = request.form['content']
         user_id = current_user.id
@@ -263,7 +263,7 @@ def createcomment(post_id):
         # Validate input
         if not content:
             flash('Comment cannot be empty.')
-            return redirect(url_for('createcomment', post_id=post_id))
+            return redirect(url_for('create_comment', post_id=post_id))
 
         # Insert the new comment into the database
         conn = get_db_connection()
@@ -287,7 +287,62 @@ def createcomment(post_id):
     ''', (post_id,)).fetchall()
     conn.close()
 
-    return render_template('createcomment.html', comments=comments, post_id=post_id)
+    return render_template('create_comment.html', comments=comments, post_id=post_id)
+
+@app.route('/edit_comment/<int:comment_id>', methods=['GET', 'POST'])
+@login_required
+def edit_comment(comment_id):
+    conn = get_db_connection()
+    comment = conn.execute('SELECT * FROM comments WHERE comment_id = ?', (comment_id,)).fetchone()
+    if comment is None:
+        flash('Comment not found')
+        return redirect(url_for('forum'))
+
+    # Add the print statement here to debug
+    print(f"Current user ID: {current_user.id}, Comment user ID: {comment['user_id']}")
+    
+    # Check if the current user is the comment owner or an admin
+    if current_user.id != comment['user_id'] and not current_user.admin:
+        flash('Access denied.')
+        return redirect(url_for('forum'))
+
+    if request.method == 'POST':
+        new_content = request.form['content']
+        if not new_content:
+            flash('Comment cannot be empty.')
+        else:
+            conn.execute('UPDATE comments SET content = ? WHERE comment_id = ?', (new_content, comment_id))
+            conn.commit()
+            flash('Comment updated successfully.')
+        conn.close()
+        return redirect(url_for('forum'))
+
+    conn.close()
+    return render_template('edit_comment.html', comment=comment)
+
+@app.route('/delete_comment/<int:comment_id>', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    conn = get_db_connection()
+    comment = conn.execute('SELECT * FROM comments WHERE comment_id = ?', (comment_id,)).fetchone()
+    if comment is None:
+        flash('Comment not found')
+        return redirect(url_for('forum'))
+
+    # Add the print statement here to debug
+    print(f"Current user ID: {current_user.id}, Comment user ID: {comment['user_id']}")
+
+    # Check if the current user is the comment owner or an admin
+    if current_user.id != comment['user_id'] and not current_user.admin:
+        flash('Access denied.')
+        return redirect(url_for('forum'))
+
+    conn.execute('DELETE FROM comments WHERE comment_id = ?', (comment_id,))
+    conn.commit()
+    conn.close()
+    flash('Comment deleted successfully.')
+    return redirect(url_for('forum'))
+
 
 @app.route('/forum')
 def forum():
@@ -304,12 +359,16 @@ def forum():
     posts_with_comments = []
     for post in posts:
         comments = conn.execute('''
-            SELECT c.comment_id, c.content, c.created_at, u.username 
+            SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
             FROM comments c 
             JOIN user u ON c.user_id = u.user_id
             WHERE c.post_id = ?
             ORDER BY c.created_at DESC
         ''', (post['post_id'],)).fetchall()
+        
+        # Debugging information
+        for comment in comments:
+            print(f"Current user ID: {current_user.id}, Comment user ID: {comment['user_id']}")
         
         posts_with_comments.append({
             'post': post,

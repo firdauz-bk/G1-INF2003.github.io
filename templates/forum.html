@@ -13,14 +13,21 @@
                     <p>{{ item.post['description'] }}</p>
                     <small>Posted by {{ item.post['username'] }} on {{ item.post['created_at'] }}</small>
                     <br>
-                    <a href="{{ url_for('createcomment', post_id=item.post['post_id']) }}">Create Comment</a>
+                    <a href="{{ url_for('create_comment', post_id=item.post['post_id']) }}">Create Comment</a>
                     
                     <!-- Display comments for this post -->
                     <h4>Comments:</h4>
                     <ul>
                         {% for comment in item.comments %}
                             <li>
-                                <strong>{{ comment['username'] }}:</strong> {{ comment['content'] }} <small>({{ comment['created_at'] }})</small>
+                            <strong>{{ comment['username'] }}:</strong> {{ comment['content'] }} <small>({{ comment['created_at'] }})</small>
+                            <!-- Add edit and delete options for comment owner or admin -->
+                                {% if current_user.is_authenticated and (current_user.id == comment['user_id'] or current_user.admin) %}
+                                     <a href="{{ url_for('edit_comment', comment_id=comment['comment_id']) }}">Edit</a>
+                                    <form method="POST" action="{{ url_for('delete_comment', comment_id=comment['comment_id']) }}" style="display:inline;">
+                                        <button type="submit">Delete</button>
+                                    </form>
+                                {% endif %}
                             </li>
                         {% else %}
                             <li>No comments yet. Be the first to comment!</li>
