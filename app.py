@@ -590,6 +590,145 @@ def get_models(brand_id):
     return jsonify(models)
 
 
+@app.route('/vehicle_type', methods=["GET", 'POST'])
+@login_required
+def vehicle_type():
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        conn = get_db_connection()
+
+        name = request.form['name']
+        # Check if the name already exists in the table
+        result = conn.execute('SELECT COUNT(1) FROM vehicle_type WHERE name = ?', (name,)).fetchone()
+        if result[0] > 0:
+            flash("Name already exists!")
+            return redirect(url_for('vehicle_type')) 
+
+        # If not, add the new vehicle type to the table
+        conn.execute('INSERT INTO vehicle_type (name) VALUES (?)', (name, ))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('vehicle_type'))
+    
+    # Retrieve all comments related to the post
+    conn = get_db_connection()
+    vehicle_types = conn.execute('SELECT * FROM vehicle_type').fetchall()
+    conn.close()
+
+    return render_template('vehicle_type.html', vehicle_types=vehicle_types)
+
+@app.route('/vehicle_type/edit/<int:type_id>', methods=["GET", 'POST'])
+@login_required
+def vehicle_type_edit(type_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        conn = get_db_connection()
+        name = request.form['name']
+
+        # Check if the name already exists in the table
+        result = conn.execute('SELECT COUNT(1) FROM vehicle_type WHERE name = ?', (name,)).fetchone()
+        if result[0] > 0:
+            flash("Name already exists!")
+            return redirect(url_for('vehicle_type')) 
+
+        # If not, add new vehicle_type to database
+        name = request.form['name']
+        conn.execute('UPDATE vehicle_type SET name = ? WHERE type_id = ?', (name, type_id))
+        conn.commit()
+        conn.close()
+
+    return redirect(url_for('vehicle_type'))
+
+@app.route('/vehicle_type/delete/<int:type_id>', methods=["GET", 'POST'])
+@login_required
+def vehicle_type_delete(type_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+    
+    conn = get_db_connection()
+    conn.execute('DELETE FROM vehicle_type WHERE type_id=?', (type_id,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('vehicle_type'))
+
+
+@app.route('/brand_type', methods=["GET", 'POST'])
+@login_required
+def brand_type():
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        conn = get_db_connection()
+
+        # Check if the name already exists in the table
+        result = conn.execute('SELECT COUNT(1) FROM brand WHERE name = ?', (name,)).fetchone()
+        if result[0] > 0:
+            flash("Name already exists!")
+            return redirect(url_for('brand_type')) 
+
+        # If not, add it to the 
+        conn.execute('INSERT INTO brand (name) VALUES (?)', (name, ))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('brand_type'))
+    
+    # Retrieve all comments related to the post
+    conn = get_db_connection()
+    brands = conn.execute('SELECT * FROM brand').fetchall()
+    return render_template('brand_type.html', brands=brands)
+
+@app.route('/brand_type/edit/<int:brand_id>', methods=["GET", 'POST'])
+@login_required
+def brand_type_edit(brand_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        conn = get_db_connection()
+        name = request.form['name']
+
+        # Check if the name already exists in the table
+        result = conn.execute('SELECT COUNT(1) FROM brand WHERE name = ?', (name,)).fetchone()
+        if result[0] > 0:
+            flash("Name already exists!")
+            return redirect(url_for('brand_type'))
+
+        # If not add it to the brand table
+        conn.execute('UPDATE brand SET name = ? WHERE brand_id=?', (name, brand_id))
+        conn.commit()
+        conn.close()
+
+    return redirect(url_for('brand_type'))
+
+@app.route('/brand_type/delete/<int:brand_id>', methods=["GET", 'POST'])
+@login_required
+def brand_type_delete(brand_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM brand WHERE brand_id=?', (brand_id,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('brand_type'))
+
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
