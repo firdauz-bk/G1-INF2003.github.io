@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Model{% endblock %}
+
+{% block content %}
+<h1>Edit Model</h1>
+
+<form method="POST">
+    <label for="name">Model Name</label>
+    <input type="text" id="name" name="name" value="{{ model['name'] }}">
+
+    <label for="brand_id">Brand</label>
+    <select id="brand_id" name="brand_id">
+        {% for brand in brands %}
+        <option value="{{ brand['brand_id'] }}" {% if brand['brand_id'] == model['brand_id'] %}selected{% endif %}>{{ brand['name'] }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="type_id">Vehicle Type</label>
+    <select id="type_id" name="type_id">
+        {% for vehicle_type in vehicle_types %}
+        <option value="{{ vehicle_type['type_id'] }}" {% if vehicle_type['type_id'] == model['type_id'] %}selected{% endif %}>{{ vehicle_type['name'] }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Update</button>
+</form>
+{% endblock %}

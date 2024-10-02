@@ -17,6 +17,8 @@
                 {% endif %}
                 <li><a href="{{ url_for('forum') }}">Forum</a></li>
                 <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                <li><a href="{{ url_for('models') }}">Manage Models</a></li>
+                <li><a href="{{ url_for('customize') }}">Create customization</a></li>
             {% else %}
                 <li><a href="{{ url_for('login') }}">Login</a></li>
                 <li><a href="{{ url_for('create_user') }}">Register</a></li>

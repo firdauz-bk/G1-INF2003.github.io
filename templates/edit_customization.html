@@ -1,0 +1,39 @@
+<!-- templates/edit_customization.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Edit Customization</h1>
+
+<form method="POST" action="{{ url_for('edit_customization', customization_id=customization.customization_id) }}">
+    <label for="brand_id">Brand:</label>
+    <select name="brand_id" id="brand_id" onchange="loadModels()">
+        {% for brand in brands %}
+            <option value="{{ brand.brand_id }}" {% if brand.brand_id == customization.brand_id %}selected{% endif %}>{{ brand.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="model_id">Model:</label>
+    <select name="model_id" id="model_id" required>
+        <option value="" disabled>Select a model</option>
+        {% for model in models %}
+            <option value="{{ model.model_id }}" {% if model.model_id == customization.model_id %}selected{% endif %}>{{ model.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="color_id">Color:</label>
+    <select name="color_id" id="color_id">
+        {% for color in colors %}
+            <option value="{{ color.color_id }}" {% if color.color_id == customization.color_id %}selected{% endif %}>{{ color.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="wheel_id">Wheel Set:</label>
+    <select name="wheel_id" id="wheel_id">
+        {% for wheel in wheels %}
+            <option value="{{ wheel.wheel_id }}" {% if wheel.wheel_id == customization.wheel_id %}selected{% endif %}>{{ wheel.name }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Update Customization</button>
+</form>
+{% endblock %}

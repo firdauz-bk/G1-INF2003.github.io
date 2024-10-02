@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, g
+from flask import Flask, render_template, request, redirect, url_for, flash, g, jsonify
 import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -377,6 +377,218 @@ def forum():
         
     conn.close()
     return render_template('forum.html', posts_with_comments=posts_with_comments)
+
+# Route to display all models
+@app.route('/models')
+@login_required
+def models():
+    conn = get_db_connection()
+    models = conn.execute('''
+        SELECT model.model_id, model.name as model_name, brand.name as brand_name, vehicle_type.name as type_name
+        FROM model
+        JOIN brand ON model.brand_id = brand.brand_id
+        JOIN vehicle_type ON model.type_id = vehicle_type.type_id
+        ORDER BY model.name
+    ''').fetchall()
+    conn.close()
+    return render_template('model.html', models=models)
+
+# Route to create a new model
+@app.route('/create_model', methods=['GET', 'POST'])
+@login_required
+def create_model():
+    if request.method == 'POST':
+        name = request.form['name']
+        brand_id = request.form['brand_id']
+        type_id = request.form['type_id']
+        
+        if not name or not brand_id or not type_id:
+            flash('All fields are required.')
+            return redirect(url_for('create_model'))
+
+        conn = get_db_connection()
+        conn.execute('''
+            INSERT INTO model (name, brand_id, type_id) VALUES (?, ?, ?)
+        ''', (name, brand_id, type_id))
+        conn.commit()
+        conn.close()
+
+        flash('Model added successfully!')
+        return redirect(url_for('models'))
+    
+    # Retrieve brands and vehicle types for the form dropdowns
+    conn = get_db_connection()
+    brands = conn.execute('SELECT * FROM brand').fetchall()
+    vehicle_types = conn.execute('SELECT * FROM vehicle_type').fetchall()
+    conn.close()
+
+    return render_template('create_model.html', brands=brands, vehicle_types=vehicle_types)
+
+# Route to update a model
+@app.route('/edit_model/<int:model_id>', methods=['GET', 'POST'])
+@login_required
+def edit_model(model_id):
+    conn = get_db_connection()
+    model = conn.execute('SELECT * FROM model WHERE model_id = ?', (model_id,)).fetchone()
+    
+    if not model:
+        flash('Model not found.')
+        return redirect(url_for('models'))
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        brand_id = request.form['brand_id']
+        type_id = request.form['type_id']
+        
+        if not name or not brand_id or not type_id:
+            flash('All fields are required.')
+        else:
+            conn.execute('''
+                UPDATE model SET name = ?, brand_id = ?, type_id = ? WHERE model_id = ?
+            ''', (name, brand_id, type_id, model_id))
+            conn.commit()
+            conn.close()
+            flash('Model updated successfully!')
+            return redirect(url_for('models'))
+
+    # Retrieve brands and vehicle types for the form dropdowns
+    brands = conn.execute('SELECT * FROM brand').fetchall()
+    vehicle_types = conn.execute('SELECT * FROM vehicle_type').fetchall()
+    conn.close()
+
+    return render_template('edit_model.html', model=model, brands=brands, vehicle_types=vehicle_types)
+
+# Route to delete a model
+@app.route('/delete_model/<int:model_id>', methods=['POST'])
+@login_required
+def delete_model(model_id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM model WHERE model_id = ?', (model_id,))
+    conn.commit()
+    conn.close()
+    flash('Model deleted successfully!')
+    return redirect(url_for('models'))
+
+
+@app.route('/customize', methods=['GET', 'POST'])
+@login_required
+def customize():
+    db = get_db_connection()
+
+    if request.method == 'POST':
+        if 'delete_id' in request.form:
+            # Handle deletion
+            delete_id = request.form['delete_id']
+            db.execute('DELETE FROM customization WHERE customization_id = ?', (delete_id,))
+            db.commit()
+        else:
+            # Check if we are updating or creating
+            customization_id = request.form.get('customization_id')
+            brand_id = request.form['brand_id']
+            model_id = request.form['model_id']
+            color_id = request.form['color_id']
+            wheel_id = request.form['wheel_id']
+
+            if customization_id:
+                # Update existing customization
+                db.execute('''
+                    UPDATE customization 
+                    SET model_id = ?, color_id = ?, wheel_id = ? 
+                    WHERE customization_id = ?
+                ''', (model_id, color_id, wheel_id, customization_id))
+            else:
+                # Insert new customization for the logged-in user
+                db.execute(
+                    'INSERT INTO customization (user_id, model_id, color_id, wheel_id) VALUES (?, ?, ?, ?)',
+                    (current_user.id, model_id, color_id, wheel_id)
+                )
+
+            db.commit()
+
+    # Fetch available options for the form
+    brands = db.execute('SELECT brand_id, name FROM brand').fetchall()
+    colors = db.execute('SELECT color_id, name FROM color').fetchall()
+    wheels = db.execute('SELECT wheel_id, name FROM wheel_set').fetchall()
+
+    # Fetch models for the first brand if exists
+    models = []
+    if brands:
+        default_brand_id = brands[0]['brand_id']
+        models = db.execute('SELECT model_id, name FROM model WHERE brand_id = ?', (default_brand_id,)).fetchall()
+
+    # Fetch current customizations for the logged-in user
+    customizations = db.execute('''
+        SELECT customization.customization_id, brand.name AS brand_name, model.name AS model_name, 
+               color.name AS color_name, wheel_set.name AS wheel_name, customization.created_at
+        FROM customization
+        JOIN model ON customization.model_id = model.model_id
+        JOIN brand ON model.brand_id = brand.brand_id
+        JOIN color ON customization.color_id = color.color_id
+        JOIN wheel_set ON customization.wheel_id = wheel_set.wheel_id
+        WHERE customization.user_id = ?
+    ''', (current_user.id,)).fetchall()
+
+    return render_template('customize.html', brands=brands, colors=colors, wheels=wheels, models=models, customizations=customizations)
+
+
+@app.route('/edit_customization/<int:customization_id>', methods=['GET', 'POST'])
+@login_required
+def edit_customization(customization_id):
+    db = get_db_connection()
+
+    # Fetch the customization details, including model_id and the associated brand_id
+    customization = db.execute('''
+        SELECT customization.customization_id, 
+               customization.model_id, 
+               customization.color_id, 
+               customization.wheel_id,
+               model.brand_id
+        FROM customization
+        JOIN model ON customization.model_id = model.model_id
+        WHERE customization.customization_id = ?
+    ''', (customization_id,)).fetchone()
+
+    if not customization:
+        return "Customization not found", 404
+
+    if request.method == 'POST':
+        # Update the customization
+        db.execute('''
+            UPDATE customization SET model_id = ?, color_id = ?, wheel_id = ?
+            WHERE customization_id = ?
+        ''', (request.form['model_id'], request.form['color_id'], request.form['wheel_id'], customization_id))
+        db.commit()
+
+        return redirect(url_for('customize'))
+
+    # Fetch available options for the form
+    brands = db.execute('SELECT brand_id, name FROM brand').fetchall()
+    colors = db.execute('SELECT color_id, name FROM color').fetchall()
+    wheels = db.execute('SELECT wheel_id, name FROM wheel_set').fetchall()
+
+    # Fetch models based on the current model's brand_id
+    # Ensure you access the correct attribute for brand_id
+    models = db.execute('SELECT model_id, name FROM model WHERE brand_id = ?', (customization['brand_id'],)).fetchall()
+
+    return render_template('edit_customization.html', customization=customization, brands=brands, colors=colors, wheels=wheels, models=models)
+
+
+@app.route('/get_models/<int:brand_id>')
+def get_models(brand_id):
+    conn = sqlite3.connect('carcraft.db')
+    cursor = conn.cursor()
+
+    # Fetch models for the selected brand
+    cursor.execute('SELECT model_id, name FROM model WHERE brand_id = ?', (brand_id,))
+    models = cursor.fetchall()
+
+    conn.close()
+
+    # Debugging information
+    print("Fetched models for brand_id {}: {}".format(brand_id, models))
+
+    return jsonify(models)
+
 
 if __name__ == '__main__':
     init_db()
