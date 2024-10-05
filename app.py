@@ -208,21 +208,6 @@ def update_user(user_id):
         return redirect(url_for('admin'))
     return render_template('update_user.html', user=user)
 
-@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
-@login_required
-def delete_user(user_id):
-    if not current_user.admin:
-        flash('Access denied. Admin privileges required.')
-        return redirect(url_for('home'))
-    
-    user = User.get(user_id)
-    if user:
-        user.delete()
-        flash('User deleted successfully')
-    else:
-        flash('User not found')
-    return redirect(url_for('admin'))
-
 @app.route('/post/<int:post_id>', methods=['GET'])
 def view_post(post_id):
     conn = get_db_connection()
@@ -395,29 +380,48 @@ def delete_comment(comment_id):
 def forum():
     conn = get_db_connection()
     
-    # Retrieve posts and join with user table to get username
-    posts = conn.execute('''
+    # Get filter parameters from request args
+    selected_brand_id = request.args.get('brand')
+    selected_color_id = request.args.get('color')
+    selected_wheel_id = request.args.get('wheel')
 
-    SELECT p.post_id, p.title, p.description, p.created_at, p.user_id, u.username, c.customization_name AS customization_name, c.customization_id
-    FROM post p
-    JOIN user u ON p.user_id = u.user_id
-    LEFT JOIN customization c ON p.customization_id = c.customization_id
-    ORDER BY p.created_at DESC
-''').fetchall()
+    # Construct the base query for posts
+    query = '''
+        SELECT p.post_id, p.title, p.description, p.created_at, p.user_id, u.username, 
+               c.customization_name AS customization_name, c.customization_id
+        FROM post p
+        JOIN user u ON p.user_id = u.user_id
+        LEFT JOIN customization c ON p.customization_id = c.customization_id
+        WHERE 1=1
+    '''
 
+    # Add filters to the query if selected
+    params = []
+    if selected_brand_id:
+        query += ' AND c.model_id IN (SELECT model_id FROM model WHERE brand_id = ?)'
+        params.append(selected_brand_id)
+    if selected_color_id:
+        query += ' AND c.color_id = ?'
+        params.append(selected_color_id)
+    if selected_wheel_id:
+        query += ' AND c.wheel_id = ?'
+        params.append(selected_wheel_id)
 
+    query += ' ORDER BY p.created_at DESC'
     
+    # Execute the query
+    posts = conn.execute(query, params).fetchall()
+
     # Fetch comments for each post
     posts_with_comments = []
     for post in posts:
         comments = conn.execute('''
-
-        SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
-        FROM comment c 
-        JOIN user u ON c.user_id = u.user_id
-        WHERE c.post_id = ?
-        ORDER BY c.created_at DESC
-''', (post['post_id'],)).fetchall()
+            SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
+            FROM comment c 
+            JOIN user u ON c.user_id = u.user_id
+            WHERE c.post_id = ?
+            ORDER BY c.created_at DESC
+        ''', (post['post_id'],)).fetchall()
 
         posts_with_comments.append({
             'post': post,
@@ -426,9 +430,30 @@ def forum():
 
     # Fetch all available customizations for the dropdown
     customizations = conn.execute('SELECT customization_id, customization_name FROM customization WHERE user_id = ?', (current_user.id,)).fetchall()
+
+    # Fetch dropdown options: brands, colors, and wheels
+    brands = conn.execute('SELECT * FROM brand').fetchall()
+    colors = conn.execute('SELECT * FROM color').fetchall()
+    wheels = conn.execute('SELECT * FROM wheel_set').fetchall()
+
     conn.close()
-    
-    return render_template('forum.html', posts_with_comments=posts_with_comments, customizations=customizations)
+
+    # Convert rows to dictionaries for easy use in Jinja2 templates
+    brands = [dict(row) for row in brands]
+    colors = [dict(row) for row in colors]
+    wheels = [dict(row) for row in wheels]
+
+    # Pass the selected filter IDs to the template
+    return render_template('forum.html', 
+                           posts_with_comments=posts_with_comments, 
+                           customizations=customizations,
+                           brands=brands, 
+                           colors=colors, 
+                           wheels=wheels,
+                           selected_brand_id=selected_brand_id,
+                           selected_color_id=selected_color_id,
+                           selected_wheel_id=selected_wheel_id)
+
 
 @app.route('/search', methods=['GET'])
 def search():
@@ -456,9 +481,6 @@ def search():
     conn.close()
 
     return render_template('search_results.html', posts=posts, query=query, comments=comments)
-
-
-
 
 
 # Route to display all models

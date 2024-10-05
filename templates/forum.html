@@ -11,6 +11,37 @@
         <input type="text" name="query" placeholder="Search posts and comments..." class="form-control me-2" required>
         <button type="submit" class="btn btn-primary">Search</button>
     </form>
+
+    <!-- Filtering Form -->
+    <!-- Filtering Form -->
+    <form method="GET" action="{{ url_for('forum') }}" class="mb-4 d-flex">
+        <select name="brand" class="form-select me-2">
+            <option value="">Select Brand</option>
+            {% for brand in brands %}
+                <option value="{{ brand['brand_id'] }}" {% if brand['brand_id'] == selected_brand_id %}selected{% endif %}>{{ brand['name'] }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="color" class="form-select me-2">
+            <option value="">Select Color</option>
+            {% for color in colors %}
+                <option value="{{ color['color_id'] }}" {% if color['color_id'] == selected_color_id %}selected{% endif %}>{{ color['name'] }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="wheel" class="form-select me-2">
+            <option value="">Select Wheel Set</option>
+            {% for wheel in wheels %}
+                <option value="{{ wheel['wheel_id'] }}" {% if wheel['wheel_id'] == selected_wheel_id %}selected{% endif %}>{{ wheel['name'] }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+
+    
+    
+
     <div class="mb-3">
         <a href="{{ url_for('create_post') }}" class="btn btn-primary">Create Post</a>
     </div>
