@@ -240,8 +240,44 @@ def admin():
     if not current_user.admin:
         flash('Access denied. Admin privileges required.')
         return redirect(url_for('home'))
+    
+    conn = get_db_connection()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'create_vehicle_type':
+            name = request.form.get('name')
+            conn.execute('INSERT INTO vehicle_type (name) VALUES (?)', (name,))
+        elif action == 'update_vehicle_type':
+            type_id = request.form.get('type_id')
+            name = request.form.get('name')
+            conn.execute('UPDATE vehicle_type SET name = ? WHERE type_id = ?', (name, type_id))
+        elif action == 'delete_vehicle_type':
+            type_id = request.form.get('type_id')
+            conn.execute('DELETE FROM vehicle_type WHERE type_id = ?', (type_id,))
+        
+        # Add similar blocks for other entity types (brand, model, color, wheel_set)
+        
+        conn.commit()
+        return redirect(url_for('admin'))
+    
     users = User.get_all_users()
-    return render_template('admin.html', users=users)
+    vehicle_types = conn.execute('SELECT * FROM vehicle_type').fetchall()
+    brands = conn.execute('SELECT * FROM brand').fetchall()
+    models = conn.execute('''
+        SELECT model.model_id, model.name as model_name, brand.name as brand_name, vehicle_type.name as type_name
+        FROM model
+        JOIN brand ON model.brand_id = brand.brand_id
+        JOIN vehicle_type ON model.type_id = vehicle_type.type_id
+        ORDER BY model.name
+    ''').fetchall()
+    colors = conn.execute('SELECT * FROM color').fetchall()
+    wheel_sets = conn.execute('SELECT * FROM wheel_set').fetchall()
+    
+    conn.close()
+    
+    return render_template('admin.html', users=users, vehicle_types=vehicle_types, 
+                           brands=brands, models=models, colors=colors, wheel_sets=wheel_sets)
 
 @app.route('/admin/update_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -296,8 +332,10 @@ def create_post():
 
         # Insert the new post into the database
         conn = get_db_connection()
+
         conn.execute('INSERT INTO posts (title, description, user_id, customization_id) VALUES (?, ?, ?, ?)',
                      (title, description, current_user.id, customization_id))
+
         conn.commit()
         conn.close()
 
@@ -327,7 +365,7 @@ def create_comment(post_id):
 
         # Insert the new comment into the database
         conn = get_db_connection()
-        conn.execute('INSERT INTO comments (content, user_id, post_id) VALUES (?, ?, ?)',
+        conn.execute('INSERT INTO comment (content, user_id, post_id) VALUES (?, ?, ?)',
                      (content, user_id, post_id))
         conn.commit()
         conn.close()
@@ -340,7 +378,7 @@ def create_comment(post_id):
     conn = get_db_connection()
     comments = conn.execute('''
         SELECT c.comment_id, c.content, c.created_at, u.username 
-        FROM comments c 
+        FROM comment c 
         JOIN user u ON c.user_id = u.user_id
         WHERE c.post_id = ?
         ORDER BY c.created_at DESC
@@ -353,7 +391,7 @@ def create_comment(post_id):
 @login_required
 def edit_comment(comment_id):
     conn = get_db_connection()
-    comment = conn.execute('SELECT * FROM comments WHERE comment_id = ?', (comment_id,)).fetchone()
+    comment = conn.execute('SELECT * FROM comment WHERE comment_id = ?', (comment_id,)).fetchone()
     if comment is None:
         flash('Comment not found')
         return redirect(url_for('forum'))
@@ -371,7 +409,7 @@ def edit_comment(comment_id):
         if not new_content:
             flash('Comment cannot be empty.')
         else:
-            conn.execute('UPDATE comments SET content = ? WHERE comment_id = ?', (new_content, comment_id))
+            conn.execute('UPDATE comment SET content = ? WHERE comment_id = ?', (new_content, comment_id))
             conn.commit()
             flash('Comment updated successfully.')
         conn.close()
@@ -384,7 +422,7 @@ def edit_comment(comment_id):
 @login_required
 def delete_comment(comment_id):
     conn = get_db_connection()
-    comment = conn.execute('SELECT * FROM comments WHERE comment_id = ?', (comment_id,)).fetchone()
+    comment = conn.execute('SELECT * FROM comment WHERE comment_id = ?', (comment_id,)).fetchone()
     if comment is None:
         flash('Comment not found')
         return redirect(url_for('forum'))
@@ -397,7 +435,7 @@ def delete_comment(comment_id):
         flash('Access denied.')
         return redirect(url_for('forum'))
 
-    conn.execute('DELETE FROM comments WHERE comment_id = ?', (comment_id,))
+    conn.execute('DELETE FROM comment WHERE comment_id = ?', (comment_id,))
     conn.commit()
     conn.close()
     flash('Comment deleted successfully.')
@@ -410,6 +448,7 @@ def forum():
     
     # Retrieve posts and join with user table to get username
     posts = conn.execute('''
+
     SELECT p.post_id, p.title, p.description, p.created_at, p.user_id, u.username, c.customization_name AS customization_name, c.customization_id
     FROM posts p
     JOIN user u ON p.user_id = u.user_id
@@ -417,11 +456,13 @@ def forum():
     ORDER BY p.created_at DESC
 ''').fetchall()
 
+
     
     # Fetch comments for each post
     posts_with_comments = []
     for post in posts:
         comments = conn.execute('''
+
         SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
         FROM comments c 
         JOIN user u ON c.user_id = u.user_id
@@ -429,7 +470,6 @@ def forum():
         ORDER BY c.created_at DESC
 ''', (post['post_id'],)).fetchall()
 
-        
         posts_with_comments.append({
             'post': post,
             'comments': comments

@@ -1,4 +1,6 @@
 import sqlite3
+import pandas as pd
+from werkzeug.security import generate_password_hash
 
 # Connect to your SQLite database (adjust the path as necessary)
 conn = sqlite3.connect('carcraft.db')

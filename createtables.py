@@ -8,6 +8,8 @@ cursor = conn.cursor()
 
 # SQL script for creating tables
 sql_script = '''
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS comment;
 DROP TABLE IF EXISTS post;
