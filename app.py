@@ -145,7 +145,47 @@ def admin():
     if not current_user.admin:
         flash('Access denied. Admin privileges required.')
         return redirect(url_for('home'))
+    
+    conn = get_db_connection()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'create_vehicle_type':
+            name = request.form.get('name')
+            conn.execute('INSERT INTO vehicle_type (name) VALUES (?)', (name,))
+        elif action == 'update_vehicle_type':
+            type_id = request.form.get('type_id')
+            name = request.form.get('name')
+            conn.execute('UPDATE vehicle_type SET name = ? WHERE type_id = ?', (name, type_id))
+        elif action == 'delete_vehicle_type':
+            type_id = request.form.get('type_id')
+            conn.execute('DELETE FROM vehicle_type WHERE type_id = ?', (type_id,))
+        
+        # Add similar blocks for other entity types (brand, model, color, wheel_set)
+        
+        conn.commit()
+        return redirect(url_for('admin'))
+    
     users = User.get_all_users()
+    vehicle_types = conn.execute('SELECT * FROM vehicle_type').fetchall()
+    brands = conn.execute('SELECT * FROM brand').fetchall()
+    models = conn.execute('''
+        SELECT model.model_id, model.name as model_name, brand.name as brand_name, vehicle_type.name as type_name
+        FROM model
+        JOIN brand ON model.brand_id = brand.brand_id
+        JOIN vehicle_type ON model.type_id = vehicle_type.type_id
+        ORDER BY model.name
+    ''').fetchall()
+    colors = conn.execute('SELECT * FROM color').fetchall()
+    wheel_sets = conn.execute('SELECT * FROM wheel_set').fetchall()
+    
+    conn.close()
+    
+    return render_template('admin.html', users=users, vehicle_types=vehicle_types, 
+                           brands=brands, models=models, colors=colors, wheel_sets=wheel_sets)
+
+
+
     return render_template('admin.html', users=users)
 
 @app.route('/admin/update_user/<int:user_id>', methods=['GET', 'POST'])
@@ -201,7 +241,7 @@ def create_post():  # Updated function name to 'create_post'
 
         # Insert the new post into the database
         conn = get_db_connection()
-        conn.execute('INSERT INTO posts (title, description, user_id) VALUES (?, ?, ?)',
+        conn.execute('INSERT INTO post (title, description, user_id) VALUES (?, ?, ?)',
                      (title, description, current_user.id))
         conn.commit()
         conn.close()
@@ -309,16 +349,16 @@ def delete_comment(comment_id):
 def forum():
     conn = get_db_connection()
     # Retrieve posts and join with user table to get username
-    posts = conn.execute('''
+    post = conn.execute('''
         SELECT p.post_id, p.title, p.description, p.created_at, u.username 
-        FROM posts p 
+        FROM post p 
         JOIN user u ON p.user_id = u.user_id
         ORDER BY p.created_at DESC
     ''').fetchall()
     
     # Fetch comments for each post
-    posts_with_comments = []
-    for post in posts:
+    post_with_comments = []
+    for post in post:
         comments = conn.execute('''
             SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
             FROM comments c 
@@ -331,13 +371,13 @@ def forum():
         for comment in comments:
             print(f"Current user ID: {current_user.id}, Comment user ID: {comment['user_id']}")
         
-        posts_with_comments.append({
+        post_with_comments.append({
             'post': post,
             'comments': comments
         })
         
     conn.close()
-    return render_template('forum.html', posts_with_comments=posts_with_comments)
+    return render_template('forum.html', post_with_comments=post_with_comments)
 
 # Route to display all models
 @app.route('/models')
