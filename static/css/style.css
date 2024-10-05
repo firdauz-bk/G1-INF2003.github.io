@@ -58,4 +58,13 @@
     color: #ffffff; /* Blue brand color */
     font-weight: bold;
 }
+.list-group-item a {
+    display: block; /* Makes the anchor fill the entire list item */
+    color: inherit; /* Keeps the text color the same as its parent */
+    transition: background-color 0.2s ease; /* Smooth background change */
+}
+
+.list-group-item a:hover {
+    background-color: #f8f9fa; /* Light gray background on hover */
+}
 

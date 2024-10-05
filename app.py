@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, g, 
 import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 DATABASE = 'carcraft.db'
 
@@ -222,6 +223,37 @@ def delete_user(user_id):
         flash('User not found')
     return redirect(url_for('admin'))
 
+@app.route('/post/<int:post_id>', methods=['GET'])
+def view_post(post_id):
+    conn = get_db_connection()
+    
+    # Fetch the post
+    post = conn.execute('''
+        SELECT p.post_id, p.title, p.description, p.created_at, p.user_id, u.username, c.customization_name AS customization_name, c.customization_id
+        FROM post p
+        JOIN user u ON p.user_id = u.user_id
+        LEFT JOIN customization c ON p.customization_id = c.customization_id
+        WHERE p.post_id = ?
+    ''', (post_id,)).fetchone()
+
+    if post is None:
+        flash('Post not found.')
+        return redirect(url_for('forum'))
+
+    # Fetch comments for this post
+    comments = conn.execute('''
+        SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
+        FROM comment c 
+        JOIN user u ON c.user_id = u.user_id
+        WHERE c.post_id = ?
+        ORDER BY c.created_at DESC
+    ''', (post_id,)).fetchall()
+
+    conn.close()
+    
+    return render_template('view_post.html', post=post, comments=comments)
+
+
 @app.route('/createpost', methods=['GET', 'POST'])
 @login_required
 def create_post():
@@ -256,6 +288,8 @@ def create_post():
 
     return render_template('createpost.html', customizations=customizations)
 
+
+
 # Route to create a new comment
 @app.route('/create_comment/<int:post_id>', methods=['GET', 'POST'])
 @login_required
@@ -267,8 +301,8 @@ def create_comment(post_id):
         # Validate input
         if not content:
             flash('Comment cannot be empty.')
-            return redirect(url_for('create_comment', post_id=post_id))
-
+            return redirect(url_for('view_post', post_id=post_id))  # Redirect to the same post page
+        
         # Insert the new comment into the database
         conn = get_db_connection()
         conn.execute('INSERT INTO comment (content, user_id, post_id) VALUES (?, ?, ?)',
@@ -276,9 +310,17 @@ def create_comment(post_id):
         conn.commit()
         conn.close()
 
-        # Redirect to the forum or post page after adding a comment
+        # Fetch the newly created comment to return it
+        new_comment = {
+            'content': content,
+            'created_at': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),  # Adjust format as needed
+            'username': current_user.username  # Assuming username is available in the user model
+        }
+
+       # Flash a success message and stay on the same page
         flash('Comment added successfully!')
-        return redirect(url_for('forum'))
+        return redirect(url_for('view_post', post_id=post_id))  # Redirect back to the post page
+
 
     # Retrieve all comments related to the post
     conn = get_db_connection()
@@ -292,6 +334,7 @@ def create_comment(post_id):
     conn.close()
 
     return render_template('create_comment.html', comments=comments, post_id=post_id)
+
 
 @app.route('/edit_comment/<int:comment_id>', methods=['GET', 'POST'])
 @login_required
