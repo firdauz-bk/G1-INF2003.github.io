@@ -150,24 +150,6 @@ def admin():
     
     conn = get_db_connection()
     
-    if request.method == 'POST':
-        action = request.form.get('action')
-        if action == 'create_vehicle_type':
-            name = request.form.get('name')
-            conn.execute('INSERT INTO vehicle_type (name) VALUES (?)', (name,))
-        elif action == 'update_vehicle_type':
-            type_id = request.form.get('type_id')
-            name = request.form.get('name')
-            conn.execute('UPDATE vehicle_type SET name = ? WHERE type_id = ?', (name, type_id))
-        elif action == 'delete_vehicle_type':
-            type_id = request.form.get('type_id')
-            conn.execute('DELETE FROM vehicle_type WHERE type_id = ?', (type_id,))
-        
-        # Add similar blocks for other entity types (brand, model, color, wheel_set)
-        
-        conn.commit()
-        return redirect(url_for('admin'))
-    
     users = User.get_all_users()
     vehicle_types = conn.execute('SELECT * FROM vehicle_type').fetchall()
     brands = conn.execute('SELECT * FROM brand').fetchall()
@@ -567,12 +549,16 @@ def edit_model(model_id):
 @app.route('/delete_model/<int:model_id>', methods=['POST'])
 @login_required
 def delete_model(model_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+
     conn = get_db_connection()
     conn.execute('DELETE FROM model WHERE model_id = ?', (model_id,))
     conn.commit()
     conn.close()
     flash('Model deleted successfully!')
-    return redirect(url_for('models'))
+    return redirect(url_for('admin') + '#models')
 
 
 @app.route('/customize', methods=['GET', 'POST'])
@@ -817,9 +803,8 @@ def vehicle_type_delete(type_id):
     conn.execute('DELETE FROM vehicle_type WHERE type_id=?', (type_id,))
     conn.commit()
     conn.close()
-
-    return redirect(url_for('vehicle_type'))
-
+    flash('Vehicle type deleted successfully!')
+    return redirect(url_for('admin') + '#vehicle_types')
 
 @app.route('/brand_type', methods=["GET", 'POST'])
 @login_required
@@ -885,9 +870,65 @@ def brand_type_delete(brand_id):
     conn.execute('DELETE FROM brand WHERE brand_id=?', (brand_id,))
     conn.commit()
     conn.close()
+    flash('Brand deleted successfully!')
+    return redirect(url_for('admin') + '#brands')
 
     return redirect(url_for('brand_type'))
 
+@app.route('/create_wheel_set', methods=['GET', 'POST'])
+@login_required
+def create_wheel_set():
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('admin'))
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        conn = get_db_connection()
+        conn.execute('INSERT INTO wheel_set (name, description) VALUES (?, ?)', (name, description))
+        conn.commit()
+        conn.close()
+        flash('Wheel set created successfully.')
+        return redirect(url_for('admin') + '#wheel_sets')
+    
+    return render_template('create_wheel_set.html')
+
+@app.route('/edit_wheel_set/<int:wheel_id>', methods=['GET', 'POST'])
+@login_required
+def edit_wheel_set(wheel_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('admin'))
+    
+    conn = get_db_connection()
+    wheel_set = conn.execute('SELECT * FROM wheel_set WHERE wheel_id = ?', (wheel_id,)).fetchone()
+    
+    if request.method == 'POST':
+        name = request.form['name']
+        description = request.form['description']
+        conn.execute('UPDATE wheel_set SET name = ?, description = ? WHERE wheel_id = ?', (name, description, wheel_id))
+        conn.commit()
+        conn.close()
+        flash('Wheel set updated successfully.')
+        return redirect(url_for('admin') + '#wheel_sets')
+    
+    conn.close()
+    return render_template('edit_wheel_set.html', wheel_set=wheel_set)
+
+@app.route('/delete_wheel_set/<int:wheel_id>', methods=['POST'])
+@login_required
+def delete_wheel_set(wheel_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('admin'))
+    
+    conn = get_db_connection()
+    conn.execute('DELETE FROM wheel_set WHERE wheel_id = ?', (wheel_id,))
+    conn.commit()
+    conn.close()
+    flash('Wheel set deleted successfully.')
+    return redirect(url_for('admin') + '#wheel_sets')
 
 if __name__ == '__main__':
     app.run(debug=True)
