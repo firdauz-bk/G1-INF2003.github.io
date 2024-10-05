@@ -40,6 +40,7 @@ CREATE TABLE post (
     user_id INTEGER NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    category TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customization_id) REFERENCES customization(customization_id),
     FOREIGN KEY (user_id) REFERENCES user(user_id)

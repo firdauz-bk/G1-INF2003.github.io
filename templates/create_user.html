@@ -1,16 +1,34 @@
-<!-- create_user.html -->
 {% extends "base.html" %}
 {% block content %}
-    <h1>Create User</h1>
-    <form method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <label for="admin">Admin:</label>
-        <input type="checkbox" id="admin" name="admin">
-        <button type="submit">Create User</button>
-    </form>
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="card shadow" style="width: 400px;">
+            <div class="card-header text-center">
+                <h2>Create User</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" id="admin" name="admin" class="form-check-input">
+                        <label for="admin" class="form-check-label">Admin</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Create User</button>
+                </form>
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}

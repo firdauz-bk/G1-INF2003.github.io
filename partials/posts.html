@@ -1,0 +1,27 @@
+<ul class="list-group">
+    {% for item in posts_with_comments %}
+        <li class="list-group-item post-item">
+            <a href="{{ url_for('view_post', post_id=item.post['post_id']) }}" class="text-decoration-none">
+                <div class="p-3 border rounded">
+                    <h3>{{ item.post['title'] }}</h3>
+                    <p>{{ item.post['description'] }}</p>
+                    {% if item.post['customization_name'] %}
+                        <p class="mt-2">Customization: {{ item.post['customization_name'] }} (ID: {{ item.post['customization_id'] }})</p>
+                    {% else %}
+                        <p class="mt-2">Customization: None</p>
+                    {% endif %}
+                    <small class="text-muted">Posted by {{ item.post['username'] }} on {{ item.post['created_at'] }}</small>
+                </div>
+            </a>
+            <!-- Edit and delete options for post owner or admin -->
+            {% if current_user.is_authenticated and (current_user.id == item.post['user_id'] or current_user.admin) %}
+                <div class="mt-2">
+                    <a href="{{ url_for('edit_post', post_id=item.post['post_id']) }}" class="btn btn-secondary btn-sm">Edit Post</a>
+                    <form method="POST" action="{{ url_for('delete_post', post_id=item.post['post_id']) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this post?');">Delete Post</button>
+                    </form>
+                </div>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>

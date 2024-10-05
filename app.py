@@ -247,17 +247,27 @@ def create_post():
         title = request.form['title']
         description = request.form['description']
         customization_id = request.form.get('customization_id')
+        category = request.form['category']  # Get the selected category
 
         # Validate inputs
-        if not title or not description or not customization_id:
-            flash('Title, Description, and Customization are required fields!')
+        if not title or not description:
+            flash('Title and Description are required fields!')
+            return redirect(url_for('create_post'))
+
+        # Ensure customization_id is provided only for "customization showcase" category
+        if category == 'customization showcase' and not customization_id:
+            flash('Customization is required for the Customization Showcase category!')
             return redirect(url_for('create_post'))
 
         # Insert the new post into the database
         conn = get_db_connection()
 
-        conn.execute('INSERT INTO post (title, description, user_id, customization_id) VALUES (?, ?, ?, ?)',
-                     (title, description, current_user.id, customization_id))
+        if category == "customization showcase":
+            conn.execute('INSERT INTO post (title, description, user_id, customization_id, category) VALUES (?, ?, ?, ?, ?)',
+                         (title, description, current_user.id, customization_id, category))
+        else:
+            conn.execute('INSERT INTO post (title, description, user_id, category) VALUES (?, ?, ?, ?)',
+                         (title, description, current_user.id, category))
 
         conn.commit()
         conn.close()
@@ -272,6 +282,26 @@ def create_post():
     conn.close()
 
     return render_template('createpost.html', customizations=customizations)
+
+@app.route('/forum/category/<string:category_name>', methods=['GET'])
+def posts_by_category(category_name):
+    # Fetch posts by category, including username and customization details
+    conn = get_db_connection()
+    
+    query = '''
+        SELECT p.post_id, p.title, p.description, p.created_at, p.user_id, u.username, 
+               c.customization_name, c.customization_id
+        FROM post p
+        JOIN user u ON p.user_id = u.user_id
+        LEFT JOIN customization c ON p.customization_id = c.customization_id
+        WHERE p.category = ?
+        ORDER BY p.created_at DESC
+    '''
+    
+    posts = conn.execute(query, (category_name,)).fetchall()
+    conn.close()
+
+    return render_template('category_posts.html', posts=posts, category_name=category_name)
 
 
 
@@ -379,16 +409,22 @@ def delete_comment(comment_id):
 @app.route('/forum')
 def forum():
     conn = get_db_connection()
-    
+
     # Get filter parameters from request args
     selected_brand_id = request.args.get('brand')
     selected_color_id = request.args.get('color')
     selected_wheel_id = request.args.get('wheel')
+    
+    # Pagination settings
+    page = request.args.get('page', 1, type=int)  # Get the page number from the URL, default to 1
+    per_page = 5  # Number of posts per page
+    offset = (page - 1) * per_page  # Calculate the offset
 
-    # Construct the base query for posts
+    # Construct the base query for posts, including category
     query = '''
         SELECT p.post_id, p.title, p.description, p.created_at, p.user_id, u.username, 
-               c.customization_name AS customization_name, c.customization_id
+               c.customization_name AS customization_name, c.customization_id,
+               p.category
         FROM post p
         JOIN user u ON p.user_id = u.user_id
         LEFT JOIN customization c ON p.customization_id = c.customization_id
@@ -407,8 +443,11 @@ def forum():
         query += ' AND c.wheel_id = ?'
         params.append(selected_wheel_id)
 
-    query += ' ORDER BY p.created_at DESC'
-    
+    # Add pagination
+    query += ' ORDER BY p.created_at DESC LIMIT ? OFFSET ?'
+    params.append(per_page)
+    params.append(offset)
+
     # Execute the query
     posts = conn.execute(query, params).fetchall()
 
@@ -428,6 +467,26 @@ def forum():
             'comments': comments
         })
 
+    # Fetch total posts for pagination
+    total_posts_query = '''
+        SELECT COUNT(*) AS total FROM post p
+        LEFT JOIN customization c ON p.customization_id = c.customization_id
+        WHERE 1=1
+    '''
+    total_params = []
+    if selected_brand_id:
+        total_posts_query += ' AND c.model_id IN (SELECT model_id FROM model WHERE brand_id = ?)'
+        total_params.append(selected_brand_id)
+    if selected_color_id:
+        total_posts_query += ' AND c.color_id = ?'
+        total_params.append(selected_color_id)
+    if selected_wheel_id:
+        total_posts_query += ' AND c.wheel_id = ?'
+        total_params.append(selected_wheel_id)
+
+    total_posts = conn.execute(total_posts_query, total_params).fetchone()['total']
+    total_pages = (total_posts + per_page - 1) // per_page  # Calculate total pages
+
     # Fetch all available customizations for the dropdown
     customizations = conn.execute('SELECT customization_id, customization_name FROM customization WHERE user_id = ?', (current_user.id,)).fetchall()
 
@@ -443,7 +502,7 @@ def forum():
     colors = [dict(row) for row in colors]
     wheels = [dict(row) for row in wheels]
 
-    # Pass the selected filter IDs to the template
+    # Pass the selected filter IDs and pagination info to the template
     return render_template('forum.html', 
                            posts_with_comments=posts_with_comments, 
                            customizations=customizations,
@@ -452,23 +511,41 @@ def forum():
                            wheels=wheels,
                            selected_brand_id=selected_brand_id,
                            selected_color_id=selected_color_id,
-                           selected_wheel_id=selected_wheel_id)
+                           selected_wheel_id=selected_wheel_id,
+                           page=page,
+                           total_pages=total_pages)
+
 
 
 @app.route('/search', methods=['GET'])
 def search():
     query = request.args.get('query', '')
+    page = request.args.get('page', 1, type=int)  # Get the current page number from the request
+    per_page = 5  # Set the number of posts per page
 
     conn = get_db_connection()
 
-    # Retrieve posts that match the search query or have comments that match
+    # Retrieve total number of posts that match the search query
+    total_posts_query = conn.execute('''
+        SELECT COUNT(DISTINCT p.post_id)
+        FROM post p
+        JOIN user u ON p.user_id = u.user_id
+        LEFT JOIN comment c ON p.post_id = c.post_id
+        WHERE p.title LIKE ? OR p.description LIKE ? OR c.content LIKE ?
+    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchone()
+    
+    total_posts = total_posts_query[0]
+    total_pages = (total_posts + per_page - 1) // per_page  # Calculate total pages
+
+    # Retrieve posts that match the search query for the current page
     posts = conn.execute('''
         SELECT DISTINCT p.post_id, p.title, p.description, p.created_at, u.username
         FROM post p
         JOIN user u ON p.user_id = u.user_id
         LEFT JOIN comment c ON p.post_id = c.post_id
         WHERE p.title LIKE ? OR p.description LIKE ? OR c.content LIKE ?
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+        LIMIT ? OFFSET ?
+    ''', (f'%{query}%', f'%{query}%', f'%{query}%', per_page, (page - 1) * per_page)).fetchall()
 
     # Retrieve comments related to the posts found
     comments = conn.execute('''
@@ -480,7 +557,8 @@ def search():
 
     conn.close()
 
-    return render_template('search_results.html', posts=posts, query=query, comments=comments)
+    return render_template('search_results.html', posts=posts, query=query, comments=comments, page=page, total_pages=total_pages)
+
 
 
 # Route to display all models

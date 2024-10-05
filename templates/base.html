@@ -17,7 +17,7 @@
     <!-- Font Awesome CSS -->
     <link
       rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
       crossorigin="anonymous"
     />
 
@@ -39,10 +39,7 @@
                     {% endif %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('forum') }}">Forum</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('vehicle_type') }}">Manage Vehicle Types</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('brand_type') }}">Manage Brands</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('models') }}">Manage Models</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('customize') }}">Create customization</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('customize') }}">Make my Dream Car</a></li>
                 {% else %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('create_user') }}">Register</a></li>

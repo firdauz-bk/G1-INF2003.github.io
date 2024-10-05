@@ -4,18 +4,18 @@
 
 {% block content %}
 <h1>Create Post</h1>
-<form method="POST">
-    <div>
+<form method="POST" class="post-form">
+    <div class="form-group">
         <label for="title">Title:</label>
-        <input type="text" id="title" name="title" required>
+        <input type="text" id="title" name="title" class="form-control" required>
     </div>
-    <div>
+    <div class="form-group">
         <label for="description">Description:</label>
-        <textarea id="description" name="description" rows="4" required></textarea>
+        <textarea id="description" name="description" rows="4" class="form-control" required></textarea>
     </div>
-    <div>
+    <div class="form-group">
         <label for="customization">Select Customization:</label>
-        <select id="customization" name="customization_id">
+        <select id="customization" name="customization_id" class="form-control">
             <option value="">None</option>  <!-- Option for no customization -->
             {% for customization in customizations %}
                  <option value="{{ customization['customization_id'] }}">
@@ -24,6 +24,27 @@
             {% endfor %}
         </select>
     </div>
-    <button type="submit">Create Post</button>
+    <div class="form-group">
+        <label for="category">Select Category:</label>
+        <select id="category" name="category" class="form-control" required>
+            <option value="help">Help</option>
+            <option value="customization_showcase">Customization Showcase</option>
+            <option value="discussion">Discussion</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Create Post</button>
 </form>
+
+<style>
+    .post-form {
+        max-width: 600px; /* Set a maximum width for the form */
+        margin: 20px auto; /* Center the form horizontally with some margin */
+        padding: 20px; /* Add padding around the form */
+        border: 1px solid #ccc; /* Add a border */
+        border-radius: 8px; /* Round the corners */
+        background-color: #f9f9f9; /* Light background color */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow effect */
+    }
+</style>
+
 {% endblock %}

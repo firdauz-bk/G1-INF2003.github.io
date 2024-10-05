@@ -3,15 +3,22 @@
 {% block title %}Edit Post{% endblock %}
 
 {% block content %}
-    <h1>Edit Post</h1>
-    <form method="POST">
-        <label for="title">Title:</label>
-        <input type="text" id="title" name="title" value="{{ post['title'] }}" required>
-        <br>
-        <label for="description">Description:</label>
-        <textarea id="description" name="description" required>{{ post['description'] }}</textarea>
-        <br>
-        <button type="submit">Update Post</button>
+<div class="container mt-5">
+    <h1 class="mb-4 text-center">Edit Post</h1>
+
+    <form method="POST" class="mb-4">
+        <div class="mb-3">
+            <label for="title" class="form-label">Title:</label>
+            <input type="text" id="title" name="title" class="form-control" value="{{ post['title'] }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description:</label>
+            <textarea id="description" name="description" class="form-control" rows="5" required>{{ post['description'] }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Post</button>
+        <a href="{{ url_for('forum') }}" class="btn btn-secondary">Cancel</a>
     </form>
-    <a href="{{ url_for('forum') }}">Cancel</a>
+</div>
 {% endblock %}

@@ -15,6 +15,9 @@ comments = ["Good post", "bump", "nice opinion", "you are wrong", "you should be
             "Blue is a nice color", "You have yeed your last haw!", "My timbers have been shivered!", "Wow!", "しかのこのこのここしたんたん", "repost",
             "you should try using the search bar", "なにそれ草", "wwwwwwwwww", "マジ死ね"]
 
+# Add the new categories
+categories = ["help", "customization_showcase", "discussion"]
+
 def insert_posts_and_comments(comment_count: int = 5):
     # Connect to your SQLite database (adjust the path as necessary)
     conn = sqlite3.connect('carcraft.db')
@@ -23,23 +26,32 @@ def insert_posts_and_comments(comment_count: int = 5):
     customizations = cursor.execute("SELECT customization.customization_id FROM customization").fetchall()
     users = cursor.execute("SELECT user.user_id, user.username FROM user").fetchall()
 
-    # Generate Comments
+    # Generate Posts
     for user in users:
-        onCustomization = random.randint(0, 1) == 0
+        category = categories[random.randint(0, len(categories) - 1)]  # Randomly select a category
         title = titles[random.randint(0, len(titles) - 1)]
         description = descriptions[random.randint(0, len(descriptions) - 1)]
         user_id = user[0]
-        if onCustomization:
-            conn.execute("""
-                        INSERT INTO post (title, description, user_id)
-                        VALUES(?, ?, ?)
-                        """, (title, description, user_id))
+
+        if category == "customization_showcase":
+            if customizations:  # Check if there are any customizations
+                customization_id = customizations[random.randint(0, len(customizations) - 1)][0]
+                conn.execute("""
+                            INSERT INTO post (title, description, user_id, customization_id, category)
+                            VALUES(?, ?, ?, ?, ?)
+                            """, (title, description, user_id, customization_id, category))
+            else:
+                # Fallback to another category if no customizations available
+                category = random.choice([cat for cat in categories if cat != "customization_showcase"])
+                conn.execute("""
+                            INSERT INTO post (title, description, user_id, category)
+                            VALUES(?, ?, ?, ?)
+                            """, (title, description, user_id, category))
         else:
-            customization_id = customizations[random.randint(0, len(customizations) - 1)][0]
             conn.execute("""
-                        INSERT INTO post (title, description, user_id, customization_id)
+                        INSERT INTO post (title, description, user_id, category)
                         VALUES(?, ?, ?, ?)
-                        """, (title, description, user_id, customization_id))
+                        """, (title, description, user_id, category))
 
     # Generate Comments
     posts = cursor.execute("SELECT post.post_id FROM post").fetchall()

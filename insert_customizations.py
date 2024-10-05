@@ -15,8 +15,8 @@ def insert_customizations():
     conn = sqlite3.connect('carcraft.db')
     cursor = conn.cursor()
 
-    colors = cursor.execute("SELECT color.name FROM color").fetchall()
-    wheel_sets = cursor.execute("SELECT wheel_set.name FROM wheel_set").fetchall()
+    colors = cursor.execute("SELECT color.color_id FROM color").fetchall()
+    wheel_sets = cursor.execute("SELECT wheel_set.wheel_id FROM wheel_set").fetchall()
     users = cursor.execute("SELECT user.user_id FROM user").fetchall()
     models = cursor.execute("SELECT model.model_id FROM model").fetchall()
 
