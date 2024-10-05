@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Post{% endblock %}
+
+{% block content %}
+    <h1>Edit Post</h1>
+    <form method="POST">
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" value="{{ post['title'] }}" required>
+        <br>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required>{{ post['description'] }}</textarea>
+        <br>
+        <button type="submit">Update Post</button>
+    </form>
+    <a href="{{ url_for('forum') }}">Cancel</a>
+{% endblock %}
