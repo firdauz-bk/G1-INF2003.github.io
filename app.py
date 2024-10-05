@@ -14,101 +14,7 @@ def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row  # This enables column access by name: row['column_name']
     return conn
-
-def init_db():
-    with app.app_context():
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS user (
-                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                email TEXT NOT NULL UNIQUE,
-                password_hash TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                admin BOOLEAN DEFAULT FALSE
-            )
-        ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS posts (
-                post_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL,
-                user_id INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
-            )
-        ''')
-        # Create comments table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS comments (
-                comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                content TEXT NOT NULL,
-                user_id INTEGER NOT NULL,
-                post_id INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
-                FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE
-            )
-        ''')
-         # Create customization table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS customization (
-                customization_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                customization_name TEXT NOT NULL,
-                user_id INTEGER NOT NULL,
-                model_id INTEGER,
-                color_id INTEGER,
-                wheel_id INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
-            )
-        ''')
-        conn.commit()
-        conn.close()
-        
-# Function to Alter the Posts Table to Add customization_id
-def alter_posts_table():
-    with app.app_context():
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        try:
-            # Add customization_id to posts table if it doesn't exist
-            cursor.execute('''
-                ALTER TABLE posts ADD COLUMN customization_id INTEGER
-            ''')
-            # Add a foreign key constraint to link customization_id to the customization table
-            cursor.execute('''
-                ALTER TABLE posts
-                ADD FOREIGN KEY (customization_id) REFERENCES customization(customization_id)
-            ''')
-            conn.commit()
-        except sqlite3.OperationalError:
-            # If column already exists or constraint is added, just ignore
-            pass
-        finally:
-            conn.close()
-            
-def alter_customization_table():
-    with app.app_context():
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        try:
-            # Add customization_name column to the customization table if it doesn't exist
-            cursor.execute('''
-                ALTER TABLE customization ADD COLUMN customization_name TEXT
-            ''')
-            conn.commit()
-        except sqlite3.OperationalError as e:
-            # If the column already exists, print the error for debugging
-            if "duplicate column name: customization_name" in str(e):
-                print("Column 'customization_name' already exists.")
-            else:
-                raise e
-        finally:
-            conn.close()
-
-
+    
 
 class User(UserMixin):
     def __init__(self, user_id, username, email, password_hash, admin):
@@ -333,7 +239,7 @@ def create_post():
         # Insert the new post into the database
         conn = get_db_connection()
 
-        conn.execute('INSERT INTO posts (title, description, user_id, customization_id) VALUES (?, ?, ?, ?)',
+        conn.execute('INSERT INTO post (title, description, user_id, customization_id) VALUES (?, ?, ?, ?)',
                      (title, description, current_user.id, customization_id))
 
         conn.commit()
@@ -450,7 +356,7 @@ def forum():
     posts = conn.execute('''
 
     SELECT p.post_id, p.title, p.description, p.created_at, p.user_id, u.username, c.customization_name AS customization_name, c.customization_id
-    FROM posts p
+    FROM post p
     JOIN user u ON p.user_id = u.user_id
     LEFT JOIN customization c ON p.customization_id = c.customization_id
     ORDER BY p.created_at DESC
@@ -464,7 +370,7 @@ def forum():
         comments = conn.execute('''
 
         SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
-        FROM comments c 
+        FROM comment c 
         JOIN user u ON c.user_id = u.user_id
         WHERE c.post_id = ?
         ORDER BY c.created_at DESC
@@ -644,7 +550,7 @@ def customize():
 @login_required
 def edit_post(post_id):
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM posts WHERE post_id = ? AND user_id = ?', (post_id, current_user.id)).fetchone()
+    post = conn.execute('SELECT * FROM post WHERE post_id = ? AND user_id = ?', (post_id, current_user.id)).fetchone()
 
     if not post:
         flash('Post not found or you do not have permission to edit this post.')
@@ -659,7 +565,7 @@ def edit_post(post_id):
             flash('Title and description are required fields!')
         else:
             conn.execute('''
-                UPDATE posts SET title = ?, description = ?, customization_id = ? WHERE post_id = ?
+                UPDATE post SET title = ?, description = ?, customization_id = ? WHERE post_id = ?
             ''', (title, description, customization_id, post_id))
             conn.commit()
             conn.close()
@@ -674,13 +580,13 @@ def edit_post(post_id):
 @login_required
 def delete_post(post_id):
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM posts WHERE post_id = ? AND user_id = ?', (post_id, current_user.id)).fetchone()
+    post = conn.execute('SELECT * FROM post WHERE post_id = ? AND user_id = ?', (post_id, current_user.id)).fetchone()
 
     if not post:
         flash('Post not found or you do not have permission to delete this post.')
         return redirect(url_for('forum'))
 
-    conn.execute('DELETE FROM posts WHERE post_id = ?', (post_id,))
+    conn.execute('DELETE FROM post WHERE post_id = ?', (post_id,))
     conn.commit()
     conn.close()
     flash('Post deleted successfully.')
@@ -889,8 +795,4 @@ def brand_type_delete(brand_id):
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        init_db()  # Initialize the database if it does not exist
-        alter_posts_table()  # Alter the posts table to add customization_id if necessary
-        alter_customization_table()
     app.run(debug=True)
