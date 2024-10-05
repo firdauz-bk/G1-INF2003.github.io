@@ -1,0 +1,61 @@
+.navbar {
+    position: relative; /* or absolute */
+    z-index: 10; /* higher than the video background */
+}
+
+.video-background-container {
+    position: relative; /* or fixed */
+    z-index: 1; /* lower than the navbar */
+}
+.video-overlay {
+    position: absolute; /* Positioning relative to the container */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2; /* Ensure it's above the video */
+    color: white; /* Adjust text color */
+    text-align: center; /* Center text alignment */
+    display: flex; /* Use flexbox */
+    justify-content: center; /* Center horizontally */
+    align-items: flex-start; /* Align items to the top */
+    margin-top: 30%; /* Move down by 50% */
+    transform: translateY(-50%); /* Adjust for margin shift */
+}
+
+/* Make the navbar opaque */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.4); /* Slight opacity */
+}
+
+/* Align the menu items to the right */
+.navbar-nav {
+    margin-left: auto; /* Pushes items to the right */
+}
+
+/* Ensure that the navbar stays visible over the content */
+.navbar {
+    z-index: 1000; /* Keeps the navbar on top */
+}
+
+/* Adjusts the height slightly */
+.navbar {
+    padding: 0.5rem 1rem;
+}
+
+/* Customize hover effects for nav links */
+.navbar-nav .nav-link {
+    color: #333; /* Darker link color */
+    transition: color 0.3s ease; /* Smooth transition */
+}
+
+.navbar-nav .nav-link:hover {
+    color: #007bff; /* Blue on hover */
+}
+
+/* Optional: Adjust the brand color */
+.navbar-brand {
+    color: #007bff; /* Blue brand color */
+    font-weight: bold;
+}
+
