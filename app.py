@@ -430,6 +430,36 @@ def forum():
     
     return render_template('forum.html', posts_with_comments=posts_with_comments, customizations=customizations)
 
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('query', '')
+
+    conn = get_db_connection()
+
+    # Retrieve posts that match the search query or have comments that match
+    posts = conn.execute('''
+        SELECT DISTINCT p.post_id, p.title, p.description, p.created_at, u.username
+        FROM post p
+        JOIN user u ON p.user_id = u.user_id
+        LEFT JOIN comment c ON p.post_id = c.post_id
+        WHERE p.title LIKE ? OR p.description LIKE ? OR c.content LIKE ?
+    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+
+    # Retrieve comments related to the posts found
+    comments = conn.execute('''
+        SELECT c.content, c.created_at, c.post_id, u.username
+        FROM comment c
+        JOIN user u ON c.user_id = u.user_id
+        WHERE c.content LIKE ?
+    ''', (f'%{query}%',)).fetchall()
+
+    conn.close()
+
+    return render_template('search_results.html', posts=posts, query=query, comments=comments)
+
+
+
+
 
 # Route to display all models
 @app.route('/models')

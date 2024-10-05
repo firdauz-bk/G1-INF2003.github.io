@@ -16,12 +16,13 @@
     <div>
         <label for="customization">Select Customization:</label>
         <select id="customization" name="customization_id">
+            <option value="">None</option>  <!-- Option for no customization -->
             {% for customization in customizations %}
                  <option value="{{ customization['customization_id'] }}">
                     {{ customization['customization_name'] }} (ID: {{ customization['customization_id'] }})
                  </option>
-             {% endfor %}
-    </select>
+            {% endfor %}
+        </select>
     </div>
     <button type="submit">Create Post</button>
 </form>

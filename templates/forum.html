@@ -5,6 +5,12 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center mb-4">Posts</h1>
+    
+    <!-- Search Form -->
+    <form method="GET" action="{{ url_for('search') }}" class="mb-4 d-flex">
+        <input type="text" name="query" placeholder="Search posts and comments..." class="form-control me-2" required>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
     <div class="mb-3">
         <a href="{{ url_for('create_post') }}" class="btn btn-primary">Create Post</a>
     </div>
@@ -35,6 +41,9 @@
                             </form>
                         </div>
                     {% endif %}
+                    
+                    <br>
+                    
                 </li>
             {% endfor %}
         </ul>
