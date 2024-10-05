@@ -1,10 +1,5 @@
 import sqlite3
 
-# Connect to the SQLite database (create one if it doesn't exist)
-conn = sqlite3.connect('carcraft.db')
-
-# Create a cursor object
-cursor = conn.cursor()
 
 # SQL script for creating tables
 sql_script = '''
@@ -95,11 +90,18 @@ CREATE TABLE wheel_set (
 );
 '''
 
-# Execute the script
-cursor.executescript(sql_script)
+def regenerate_tables():
+    # Connect to the SQLite database (create one if it doesn't exist)
+    conn = sqlite3.connect('carcraft.db')
 
-# Commit and close the connection
-conn.commit()
-conn.close()
+    # Create a cursor object
+    cursor = conn.cursor()
 
-print("Tables created successfully!")
+    # Execute the script
+    cursor.executescript(sql_script)
+
+    # Commit and close the connection
+    conn.commit()
+    conn.close()
+
+    print("Tables created successfully!")

@@ -2,12 +2,12 @@ import sqlite3
 import pandas as pd
 from werkzeug.security import generate_password_hash
 
-# Connect to your SQLite database (adjust the path as necessary)
-conn = sqlite3.connect('carcraft.db')
-cursor = conn.cursor()
-
 # Function to insert data into the wheel_set table
 def insert_users():
+    # Connect to your SQLite database (adjust the path as necessary)
+    conn = sqlite3.connect('carcraft.db')
+    cursor = conn.cursor()
+
     # Open CSV file
     try:
         df = pd.read_csv("users.csv")
@@ -33,11 +33,7 @@ def insert_users():
         VALUES (?, ?, ?, ?)
         ''', ("admin", "admin@admin.com", generate_password_hash("admin"), 1))
     
+    print("User data successfully inserted!")
     conn.commit()
-
-insert_users()
-
-print("User data successfully inserted!")
-
-# Close the database connection
-conn.close()
+    # Close the database connection
+    conn.close()
