@@ -134,9 +134,22 @@ def create_user():
         password = request.form.get('password')
         admin = request.form.get('admin') == 'on'
         
+        conn = get_db_connection()
+        
+        # Check if username or email already exists
+        existing_user = conn.execute('SELECT * FROM user WHERE username = ? OR email = ?', (username, email)).fetchone()
+        if existing_user:
+            conn.close()
+            if existing_user['username'] == username:
+                flash('Username already exists. Please choose a different username.')
+            else:
+                flash('Email already exists. Please use a different email address.')
+            return render_template('create_user.html')
+        
         user = User(None, username, email, None, admin)
         user.set_password(password)
         user.save()
+        conn.close()
         flash('User created successfully')
         return redirect(url_for('home'))
     return render_template('create_user.html')
@@ -175,19 +188,39 @@ def update_user(user_id):
         flash('Access denied. Admin privileges required.')
         return redirect(url_for('home'))
     
+    conn = get_db_connection()
     user = User.get(user_id)
     if not user:
         flash('User not found')
         return redirect(url_for('admin'))
+    
     if request.method == 'POST':
-        user.username = request.form.get('username')
-        user.email = request.form.get('email')
-        user.admin = request.form.get('admin') == 'on'
+        username = request.form.get('username')
+        email = request.form.get('email')
+        admin = request.form.get('admin') == 'on'
+        
+        # Check if username or email already exists for other users
+        existing_user = conn.execute('SELECT * FROM user WHERE (username = ? OR email = ?) AND user_id != ?', 
+                                     (username, email, user_id)).fetchone()
+        if existing_user:
+            conn.close()
+            if existing_user['username'] == username:
+                flash('Username already exists. Please choose a different username.')
+            else:
+                flash('Email already exists. Please use a different email address.')
+            return render_template('update_user.html', user=user)
+        
+        user.username = username
+        user.email = email
+        user.admin = admin
         if request.form.get('password'):
             user.set_password(request.form.get('password'))
         user.save()
+        conn.close()
         flash('User updated successfully')
         return redirect(url_for('admin'))
+    
+    conn.close()
     return render_template('update_user.html', user=user)
 
 @app.route('/post/<int:post_id>', methods=['GET'])
