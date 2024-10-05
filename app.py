@@ -15,45 +15,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row  # This enables column access by name: row['column_name']
     return conn
 
-def init_db():
-    with app.app_context():
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS user (
-                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                email TEXT NOT NULL UNIQUE,
-                password_hash TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                admin BOOLEAN DEFAULT FALSE
-            )
-        ''')
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS posts (
-                post_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL,
-                user_id INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
-            )
-        ''')
-        # Create comments table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS comments (
-                comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                content TEXT NOT NULL,
-                user_id INTEGER NOT NULL,
-                post_id INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
-                FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE
-            )
-        ''')
-        conn.commit()
-        conn.close()
-
 class User(UserMixin):
     def __init__(self, user_id, username, email, password_hash, admin):
         self.id = user_id
@@ -484,23 +445,28 @@ def customize():
         else:
             # Check if we are updating or creating
             customization_id = request.form.get('customization_id')
+            customization_name = request.form.get('customization_name')  # Added this to capture customization_name
             brand_id = request.form['brand_id']
             model_id = request.form['model_id']
             color_id = request.form['color_id']
             wheel_id = request.form['wheel_id']
 
+            if not customization_name:
+                flash('Customization name is required!', 'error')
+                return redirect(url_for('customize'))
+
             if customization_id:
-                # Update existing customization
+                # Update existing customization, including customization_name
                 db.execute('''
                     UPDATE customization 
-                    SET model_id = ?, color_id = ?, wheel_id = ? 
+                    SET customization_name = ?, model_id = ?, color_id = ?, wheel_id = ? 
                     WHERE customization_id = ?
-                ''', (model_id, color_id, wheel_id, customization_id))
+                ''', (customization_name, model_id, color_id, wheel_id, customization_id))
             else:
-                # Insert new customization for the logged-in user
+                # Insert new customization for the logged-in user, including customization_name
                 db.execute(
-                    'INSERT INTO customization (user_id, model_id, color_id, wheel_id) VALUES (?, ?, ?, ?)',
-                    (current_user.id, model_id, color_id, wheel_id)
+                    'INSERT INTO customization (customization_name, user_id, model_id, color_id, wheel_id) VALUES (?, ?, ?, ?, ?)',
+                    (customization_name, current_user.id, model_id, color_id, wheel_id)
                 )
 
             db.commit()
@@ -518,8 +484,9 @@ def customize():
 
     # Fetch current customizations for the logged-in user
     customizations = db.execute('''
-        SELECT customization.customization_id, brand.name AS brand_name, model.name AS model_name, 
-               color.name AS color_name, wheel_set.name AS wheel_name, customization.created_at
+        SELECT customization.customization_id, customization.customization_name, brand.name AS brand_name, 
+               model.name AS model_name, color.name AS color_name, wheel_set.name AS wheel_name, 
+               customization.created_at
         FROM customization
         JOIN model ON customization.model_id = model.model_id
         JOIN brand ON model.brand_id = brand.brand_id
@@ -531,6 +498,7 @@ def customize():
     return render_template('customize.html', brands=brands, colors=colors, wheels=wheels, models=models, customizations=customizations)
 
 
+
 @app.route('/edit_customization/<int:customization_id>', methods=['GET', 'POST'])
 @login_required
 def edit_customization(customization_id):
@@ -539,6 +507,7 @@ def edit_customization(customization_id):
     # Fetch the customization details, including model_id and the associated brand_id
     customization = db.execute('''
         SELECT customization.customization_id, 
+               customization.customization_name,
                customization.model_id, 
                customization.color_id, 
                customization.wheel_id,
@@ -552,14 +521,16 @@ def edit_customization(customization_id):
         return "Customization not found", 404
 
     if request.method == 'POST':
-        # Update the customization
+        # Update the customization, including the customization_name
+        customization_name = request.form['customization_name']
         db.execute('''
-            UPDATE customization SET model_id = ?, color_id = ?, wheel_id = ?
+            UPDATE customization 
+            SET customization_name = ?, model_id = ?, color_id = ?, wheel_id = ? 
             WHERE customization_id = ?
-        ''', (request.form['model_id'], request.form['color_id'], request.form['wheel_id'], customization_id))
+        ''', (customization_name, request.form['model_id'], request.form['color_id'], request.form['wheel_id'], customization_id))
         db.commit()
 
-        return redirect(url_for('customize'))
+        return redirect(url_for('customize'))  # Redirect to the main customization page
 
     # Fetch available options for the form
     brands = db.execute('SELECT brand_id, name FROM brand').fetchall()
@@ -567,10 +538,10 @@ def edit_customization(customization_id):
     wheels = db.execute('SELECT wheel_id, name FROM wheel_set').fetchall()
 
     # Fetch models based on the current model's brand_id
-    # Ensure you access the correct attribute for brand_id
     models = db.execute('SELECT model_id, name FROM model WHERE brand_id = ?', (customization['brand_id'],)).fetchall()
 
     return render_template('edit_customization.html', customization=customization, brands=brands, colors=colors, wheels=wheels, models=models)
+
 
 
 @app.route('/get_models/<int:brand_id>')
@@ -730,5 +701,4 @@ def brand_type_delete(brand_id):
 
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)

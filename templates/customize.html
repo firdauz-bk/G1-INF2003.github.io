@@ -5,6 +5,9 @@
 <h1>Customize Your Vehicle</h1>
 
 <form id="customization-form" method="POST" action="{{ url_for('customize') }}">
+    <label for="customization_name">Customization Name</label>
+    <input type="text" id="customization_name" name="customization_name" class="form-control" value="{{ customization.customization_name if customization else '' }}" required>
+
     <label for="brand_id">Brand:</label>
     <select name="brand_id" id="brand_id" onchange="loadModels()">
         {% for brand in brands %}
@@ -15,7 +18,6 @@
     <label for="model_id">Model:</label>
     <select name="model_id" id="model_id" required>
         <option value="" disabled selected>Select a model</option>
-        <!-- Models will be populated dynamically based on the selected brand -->
     </select>
 
     <label for="color_id">Color:</label>
@@ -40,6 +42,7 @@
     <thead>
         <tr>
             <th>Customization ID</th>
+            <th>Customization Name</th>
             <th>Brand</th>
             <th>Model</th>
             <th>Color</th>
@@ -52,6 +55,7 @@
         {% for customization in customizations %}
             <tr>
                 <td>{{ customization.customization_id }}</td>
+                <td>{{ customization.customization_name }}</td>
                 <td>{{ customization.brand_name }}</td>
                 <td>{{ customization.model_name }}</td>
                 <td>{{ customization.color_name }}</td>

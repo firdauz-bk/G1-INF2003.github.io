@@ -1,10 +1,14 @@
-<!-- templates/edit_customization.html -->
 {% extends 'base.html' %}
 
 {% block content %}
 <h1>Edit Customization</h1>
 
 <form method="POST" action="{{ url_for('edit_customization', customization_id=customization.customization_id) }}">
+    
+    <label for="customization_name">Customization Name</label>
+    <input type="text" id="customization_name" name="customization_name" class="form-control" 
+           value="{{ customization.customization_name }}" required>
+
     <label for="brand_id">Brand:</label>
     <select name="brand_id" id="brand_id" onchange="loadModels()">
         {% for brand in brands %}
@@ -36,4 +40,7 @@
 
     <button type="submit">Update Customization</button>
 </form>
+
+<!-- Include the script to handle dynamic model loading -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 {% endblock %}

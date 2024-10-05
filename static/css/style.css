@@ -19,13 +19,13 @@
     display: flex; /* Use flexbox */
     justify-content: center; /* Center horizontally */
     align-items: flex-start; /* Align items to the top */
-    margin-top: 30%; /* Move down by 50% */
+    margin-top: 40%; /* Move down by 50% */
     transform: translateY(-50%); /* Adjust for margin shift */
 }
 
 /* Make the navbar opaque */
 .navbar {
-    background-color: rgba(255, 255, 255, 0.4); /* Slight opacity */
+    background-color: rgba(53, 53, 53, 0.4); /* Slight opacity */
 }
 
 /* Align the menu items to the right */
@@ -45,17 +45,17 @@
 
 /* Customize hover effects for nav links */
 .navbar-nav .nav-link {
-    color: #333; /* Darker link color */
+    color: #ffffff; /* Darker link color */
     transition: color 0.3s ease; /* Smooth transition */
 }
 
 .navbar-nav .nav-link:hover {
-    color: #007bff; /* Blue on hover */
+    color: #ffffff; /* Blue on hover */
 }
 
 /* Optional: Adjust the brand color */
 .navbar-brand {
-    color: #007bff; /* Blue brand color */
+    color: #ffffff; /* Blue brand color */
     font-weight: bold;
 }
 

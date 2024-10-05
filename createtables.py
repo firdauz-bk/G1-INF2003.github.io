@@ -64,6 +64,7 @@ CREATE TABLE model (
 
 CREATE TABLE customization (
     customization_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customization_name VARCHAR(100) NOT NULL,
     user_id INTEGER NOT NULL,
     model_id INTEGER NOT NULL,
     color_id INTEGER NOT NULL,

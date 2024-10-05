@@ -12,9 +12,12 @@
             <div class="text-center text-white">
                 <h1 class="display-4">Welcome to CarCraft</h1>
                 <p class="lead">Customize your dream car in 180-degree view!</p>
+                <!-- Buttons below the text -->
+                <div class="mt-4">
+                    <a href="{{ url_for('forum') }}" class="btn btn-primary btn-lg mx-2">Discuss Here</a>
+                    <a href="{{ url_for('customize') }}" class="btn btn-success btn-lg mx-2">Create Your Dream Car</a>
+                </div>
             </div>
         </div>
     </div>
 {% endblock %}
-
-
