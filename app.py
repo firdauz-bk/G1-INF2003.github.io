@@ -268,7 +268,7 @@ def create_comment(post_id):
 
         # Insert the new comment into the database
         conn = get_db_connection()
-        conn.execute('INSERT INTO comments (content, user_id, post_id) VALUES (?, ?, ?)',
+        conn.execute('INSERT INTO comment (content, user_id, post_id) VALUES (?, ?, ?)',
                      (content, user_id, post_id))
         conn.commit()
         conn.close()
@@ -281,7 +281,7 @@ def create_comment(post_id):
     conn = get_db_connection()
     comments = conn.execute('''
         SELECT c.comment_id, c.content, c.created_at, u.username 
-        FROM comments c 
+        FROM comment c 
         JOIN user u ON c.user_id = u.user_id
         WHERE c.post_id = ?
         ORDER BY c.created_at DESC
@@ -294,7 +294,7 @@ def create_comment(post_id):
 @login_required
 def edit_comment(comment_id):
     conn = get_db_connection()
-    comment = conn.execute('SELECT * FROM comments WHERE comment_id = ?', (comment_id,)).fetchone()
+    comment = conn.execute('SELECT * FROM comment WHERE comment_id = ?', (comment_id,)).fetchone()
     if comment is None:
         flash('Comment not found')
         return redirect(url_for('forum'))
@@ -312,7 +312,7 @@ def edit_comment(comment_id):
         if not new_content:
             flash('Comment cannot be empty.')
         else:
-            conn.execute('UPDATE comments SET content = ? WHERE comment_id = ?', (new_content, comment_id))
+            conn.execute('UPDATE comment SET content = ? WHERE comment_id = ?', (new_content, comment_id))
             conn.commit()
             flash('Comment updated successfully.')
         conn.close()
@@ -325,7 +325,7 @@ def edit_comment(comment_id):
 @login_required
 def delete_comment(comment_id):
     conn = get_db_connection()
-    comment = conn.execute('SELECT * FROM comments WHERE comment_id = ?', (comment_id,)).fetchone()
+    comment = conn.execute('SELECT * FROM comment WHERE comment_id = ?', (comment_id,)).fetchone()
     if comment is None:
         flash('Comment not found')
         return redirect(url_for('forum'))
@@ -338,7 +338,7 @@ def delete_comment(comment_id):
         flash('Access denied.')
         return redirect(url_for('forum'))
 
-    conn.execute('DELETE FROM comments WHERE comment_id = ?', (comment_id,))
+    conn.execute('DELETE FROM comment WHERE comment_id = ?', (comment_id,))
     conn.commit()
     conn.close()
     flash('Comment deleted successfully.')
@@ -349,7 +349,7 @@ def delete_comment(comment_id):
 def forum():
     conn = get_db_connection()
     # Retrieve posts and join with user table to get username
-    post = conn.execute('''
+    posts = conn.execute('''
         SELECT p.post_id, p.title, p.description, p.created_at, u.username 
         FROM post p 
         JOIN user u ON p.user_id = u.user_id
@@ -357,11 +357,11 @@ def forum():
     ''').fetchall()
     
     # Fetch comments for each post
-    post_with_comments = []
-    for post in post:
+    posts_with_comments = []
+    for post in posts:
         comments = conn.execute('''
             SELECT c.comment_id, c.content, c.created_at, c.user_id, u.username 
-            FROM comments c 
+            FROM comment c 
             JOIN user u ON c.user_id = u.user_id
             WHERE c.post_id = ?
             ORDER BY c.created_at DESC
@@ -371,13 +371,13 @@ def forum():
         for comment in comments:
             print(f"Current user ID: {current_user.id}, Comment user ID: {comment['user_id']}")
         
-        post_with_comments.append({
+        posts_with_comments.append({
             'post': post,
             'comments': comments
         })
         
     conn.close()
-    return render_template('forum.html', post_with_comments=post_with_comments)
+    return render_template('forum.html', posts_with_comments=posts_with_comments)
 
 # Route to display all models
 @app.route('/models')
