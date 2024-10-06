@@ -1,31 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
-
 <div class="container-fluid">
     <div class="row">
-        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
             <div class="position-sticky pt-3">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#dashboard">Dashboard</a>
+                        <a class="nav-link active" href="#dashboard">
+                            Dashboard
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#users">Users</a>
+                        <a class="nav-link" href="#users">
+                            Users
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#vehicle_types">Vehicle Types</a>
+                        <a class="nav-link" href="#vehicle_types">
+                            Vehicle Types
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#brands">Brands</a>
+                        <a class="nav-link" href="#brands">
+                            Brands
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#models">Models</a>
+                        <a class="nav-link" href="#models">
+                            Models
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#colors">Colors</a>
+                        <a class="nav-link" href="#colors">
+                            Colors
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#wheel_sets">Wheel Sets</a>
+                        <a class="nav-link" href="#wheel_sets">
+                            Wheel Sets
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -33,14 +46,14 @@
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2" id="dashboard">Dashboard</h1>
+                <h1 id="dashboard" class="h2">Dashboard</h1>
             </div>
 
             <div class="row">
                 <div class="col-md-3 mb-4">
                     <div class="card bg-primary text-white">
                         <div class="card-body">
-                            <h5 class="card-title">Users</h5>
+                            <h5 id="users" class="card-title">Users</h5>
                             <p class="card-text">{{ users|length }}</p>
                         </div>
                     </div>
@@ -48,7 +61,7 @@
                 <div class="col-md-3 mb-4">
                     <div class="card bg-success text-white">
                         <div class="card-body">
-                            <h5 class="card-title">Vehicle Types</h5>
+                            <h5 id="vehicle-types" class="card-title">Vehicle Types</h5>
                             <p class="card-text">{{ vehicle_types|length }}</p>
                         </div>
                     </div>
@@ -56,7 +69,7 @@
                 <div class="col-md-3 mb-4">
                     <div class="card bg-warning text-white">
                         <div class="card-body">
-                            <h5 class="card-title">Brands</h5>
+                            <h5 id="brands" class="card-title">Brands</h5>
                             <p class="card-text">{{ brands|length }}</p>
                         </div>
                     </div>
@@ -64,14 +77,14 @@
                 <div class="col-md-3 mb-4">
                     <div class="card bg-danger text-white">
                         <div class="card-body">
-                            <h5 class="card-title">Models</h5>
+                            <h5 id="models" class="card-title">Models</h5>
                             <p class="card-text">{{ models|length }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <h2 id="users">Users</h2>
+            <h2>Users</h2>
             <div class="table-responsive">
                 <table class="table table-striped table-sm">
                     <thead>
@@ -113,9 +126,7 @@
                             <td>{{ type.name }}</td>
                             <td>
                                 <a href="{{ url_for('vehicle_type_edit', type_id=type.type_id) }}" class="btn btn-sm btn-primary">Edit</a>
-                                <form action="{{ url_for('vehicle_type_delete', type_id=type.type_id) }}" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
-                                </form>
+                                <button class="btn btn-sm btn-danger">Delete</button>
                             </td>
                         </tr>
                         {% endfor %}

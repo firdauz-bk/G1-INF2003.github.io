@@ -8,15 +8,19 @@
         <!-- Side Panel for Category Navigation -->
         <div class="col-md-3">
             <div class="mb-4">
+                <br>
+                <br>
                 <h4>Categories</h4>
                 <div class="list-group">
-                    <a href="{{ url_for('posts_by_category', category_name='help') }}" class="list-group-item list-group-item-action">
+                    <a href="{{ url_for('posts_by_category', category_name='help') }}" class="list-group-item list-group-item-action bg-info text-dark">
                         <i class="fas fa-life-ring"></i> Help
                     </a>
-                    <a href="{{ url_for('posts_by_category', category_name='customization_showcase') }}" class="list-group-item list-group-item-action">
+                    <br>
+                    <a href="{{ url_for('posts_by_category', category_name='customization_showcase') }}" class="list-group-item list-group-item-action bg-success text-white">
                         <i class="fas fa-paint-brush"></i> Customization Showcases
                     </a>
-                    <a href="{{ url_for('posts_by_category', category_name='discussion') }}" class="list-group-item list-group-item-action">
+                    <br>
+                    <a href="{{ url_for('posts_by_category', category_name='discussion') }}" class="list-group-item list-group-item-action bg-warning text-dark">
                         <i class="fas fa-comments"></i> Discussion
                     </a>
                 </div>
@@ -25,7 +29,7 @@
 
         <!-- Main Content Section (Posts) -->
         <div class="col-md-9">
-            <h1 class="text-center mb-4">Posts</h1>
+            <h1 class="text-center mb-4">Forum Posts</h1>
     
             <!-- Search Form -->
             <form method="GET" action="{{ url_for('search') }}" class="mb-4 d-flex">

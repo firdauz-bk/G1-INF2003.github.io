@@ -1,8 +1,4 @@
-
-body {
-    font-size: .875rem;
-}
-
+/* Admin Dashboard Styles */
 .sidebar {
     position: fixed;
     top: 0;
@@ -24,54 +20,55 @@ body {
 
 .sidebar .nav-link {
     font-weight: 500;
-    color: #333;
+    color: #999;
 }
 
+.sidebar .nav-link:hover,
 .sidebar .nav-link.active {
     color: #007bff;
 }
 
-.navbar-brand {
-    padding-top: .75rem;
-    padding-bottom: .75rem;
-    font-size: 1rem;
-    background-color: rgba(0, 0, 0, .25);
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
+main {
+    padding-top: 48px;
 }
 
-.navbar .navbar-toggler {
-    top: .25rem;
-    right: 1rem;
-}
-
-.navbar .form-control {
-    padding: .75rem 1rem;
-    border-width: 0;
-    border-radius: 0;
-}
-
-.form-control-dark {
+.table {
     color: #fff;
-    background-color: rgba(255, 255, 255, .1);
-    border-color: rgba(255, 255, 255, .1);
 }
 
-.form-control-dark:focus {
-    border-color: transparent;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, .25);
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, .05);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, .075);
 }
 
 .card {
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    background-color: #2d2d2d;
+    border: 1px solid rgba(255, 255, 255, .125);
 }
 
 .card-title {
-    margin-bottom: 0.75rem;
+    color: #fff;
 }
 
-.display-4 {
-    font-size: 2.5rem;
-    font-weight: 300;
-    line-height: 1.2;
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
 }
