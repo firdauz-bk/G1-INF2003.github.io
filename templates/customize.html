@@ -12,7 +12,7 @@
 
         <div class="form-group">
             <label for="brand_id">Brand:</label>
-            <select name="brand_id" id="brand_id" class="form-control" onchange="loadModels()" required>
+            <select name="brand_id" id="brand_id" class="form-control" required>
                 <option value="" disabled selected>Select a brand</option>
                 {% for brand in brands %}
                     <option value="{{ brand.brand_id }}">{{ brand.name }}</option>
@@ -47,8 +47,12 @@
             </select>
         </div>
 
-        <button type="submit" class="btn btn-primary">Customize</button>
+        <button type="button" id="preview-button" class="btn btn-secondary">Preview Customization</button>
+        <button type="submit" class="btn btn-primary">Save Customization</button>
     </form>
+
+    <h2 id="preview-of-your-customization" class="text-center mb-4">Preview of Your Customization</h2>
+    <div id="car-viewer" class="mb-5"></div>
 
     <h2>Your Customizations</h2>
     <table class="table table-striped">
@@ -89,4 +93,57 @@
 
 <!-- Include the script to handle dynamic model loading -->
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<!-- Add jQuery first (required by SpriteSpin) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Add SpriteSpin -->
+<script src="{{ url_for('static', filename='js/spritespin.js') }}"></script>
+<style>
+    #car-viewer {
+        width: 640px;  /* Adjust the width to match your image */
+        height: 384px; /* Adjust the height to match your image */
+        margin: 0 auto; /* Center the preview horizontally */
+        display: flex;  /* Use flex to make it responsive */
+        justify-content: center;
+        align-items: center;
+        border: 1px solid #444; /* Optional border to make it visible */
+        background-color: #1f1f1f; /* Optional background for better visibility */
+    }
+</style>
+<script>
+    // Add event listener to Preview button to update the preview when clicked
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('preview-button').addEventListener('click', updatePreview);
+    });
+
+    function updatePreview() {
+        // Collect selected values
+        const brand = $('#brand_id option:selected').text().toLowerCase().replace(/ /g, '_');
+        const model = $('#model_id option:selected').text().toLowerCase().replace(/ /g, '_');
+        const color = $('#color_id option:selected').text().toLowerCase().replace(/ /g, '_');
+        const wheel = $('#wheel_id option:selected').text().toLowerCase().replace(/ /g, '_');
+
+        // Ensure all selections are made before showing the preview
+        if (brand && model && color && wheel) {
+            const images = [];
+            for (let i = 1; i <= 19; i++) {
+                images.push(`/static/images/cars/${brand}/${model}/${color}/${wheel}/${i}.webp`);
+            }
+
+            // Initialize or update SpriteSpin
+            $("#car-viewer").spritespin({
+                source: images,
+                width: 700,  // Set the desired width of the viewer
+                height: 400, // Set the desired height of the viewer
+                sense: -1,   // Change this value to reverse rotation direction
+                frameTime: 60,
+                loop: false,
+                animate: false,
+                plugins: [
+                    'drag',    // Allow dragging to rotate
+                    '360'      // Enables 360 degree mode
+                ]
+            });
+        }
+    }
+</script>
 {% endblock %}

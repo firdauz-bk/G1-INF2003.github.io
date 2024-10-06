@@ -741,8 +741,9 @@ def customize():
 
     # Fetch current customizations for the logged-in user
     customizations = db.execute('''
-        SELECT customization.customization_id, customization.customization_name, brand.name AS brand_name, 
-               model.name AS model_name, color.name AS color_name, wheel_set.name AS wheel_name, 
+        SELECT customization.customization_id, customization.customization_name, 
+               brand.name AS brand_name, model.name AS model_name, 
+               color.name AS color_name, wheel_set.name AS wheel_name, 
                customization.created_at
         FROM customization
         JOIN model ON customization.model_id = model.model_id
@@ -751,8 +752,10 @@ def customize():
         JOIN wheel_set ON customization.wheel_id = wheel_set.wheel_id
         WHERE customization.user_id = ?
     ''', (current_user.id,)).fetchall()
+    
 
-    return render_template('customize.html', brands=brands, colors=colors, wheels=wheels, models=models, customizations=customizations)
+    return render_template('customize.html', brands=brands, colors=colors, 
+                           wheels=wheels, models=models, customizations=customizations)
 
 @app.route('/edit_post/<int:post_id>', methods=['GET', 'POST'])
 @login_required
