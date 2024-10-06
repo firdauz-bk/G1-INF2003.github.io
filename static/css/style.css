@@ -1,70 +1,255 @@
-.navbar {
-    position: relative; /* or absolute */
-    z-index: 10; /* higher than the video background */
+/* Main background and text colors */
+body {
+    background-color: #1e1e1e;
+    color: #ffffff;
 }
 
-.video-background-container {
-    position: relative; /* or fixed */
-    z-index: 1; /* lower than the navbar */
+/* Navbar styling */
+.navbar {
+    background-color: rgba(45, 45, 45, 0.8);
+    position: relative;
+    z-index: 1000;
+    padding: 0.5rem 1rem;
 }
+
+.navbar-brand, .nav-link {
+    color: #ffffff !important;
+    transition: color 0.3s ease;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.nav-link:hover {
+    color: #007bff !important;
+}
+
+.navbar-nav {
+    margin-left: auto;
+}
+
+/* Video background */
+.video-background-container {
+    position: relative;
+    z-index: 1;
+}
+
 .video-overlay {
-    position: absolute; /* Positioning relative to the container */
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 2; /* Ensure it's above the video */
-    color: white; /* Adjust text color */
-    text-align: center; /* Center text alignment */
-    display: flex; /* Use flexbox */
-    justify-content: center; /* Center horizontally */
-    align-items: flex-start; /* Align items to the top */
-    margin-top: 40%; /* Move down by 50% */
-    transform: translateY(-50%); /* Adjust for margin shift */
+    z-index: 2;
+    color: white;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 40%;
+    transform: translateY(-50%);
 }
 
-/* Make the navbar opaque */
-.navbar {
-    background-color: rgba(53, 53, 53, 0.4); /* Slight opacity */
+/* Container background */
+.container {
+    background-color: rgba(45, 45, 45, 0.8);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
 }
 
-/* Align the menu items to the right */
-.navbar-nav {
-    margin-left: auto; /* Pushes items to the right */
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff;
 }
 
-/* Ensure that the navbar stays visible over the content */
-.navbar {
-    z-index: 1000; /* Keeps the navbar on top */
+/* Category sidebar */
+.list-group-item {
+    background-color: #3d3d3d;
+    color: #ffffff;
+    border-color: #4d4d4d;
+    transition: background-color 0.2s ease;
 }
 
-/* Adjusts the height slightly */
-.navbar {
-    padding: 0.5rem 1rem;
+.list-group-item:hover {
+    background-color: #4d4d4d;
 }
 
-/* Customize hover effects for nav links */
-.navbar-nav .nav-link {
-    color: #ffffff; /* Darker link color */
-    transition: color 0.3s ease; /* Smooth transition */
-}
-
-.navbar-nav .nav-link:hover {
-    color: #ffffff; /* Blue on hover */
-}
-
-/* Optional: Adjust the brand color */
-.navbar-brand {
-    color: #ffffff; /* Blue brand color */
-    font-weight: bold;
-}
 .list-group-item a {
-    display: block; /* Makes the anchor fill the entire list item */
-    color: inherit; /* Keeps the text color the same as its parent */
-    transition: background-color 0.2s ease; /* Smooth background change */
+    display: block;
+    color: inherit;
 }
 
-.list-group-item a:hover {
-    background-color: #f8f9fa; /* Light gray background on hover */
+/* Buttons */
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
 }
 
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+/* Post items */
+.border {
+    border-color: #4d4d4d !important;
+}
+
+/* Category badges */
+.badge {
+    font-size: 0.9em;
+    padding: 5px 10px;
+}
+
+.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+.bg-success {
+    background-color: #28a745 !important;
+}
+
+.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+/* Pagination */
+.page-link {
+    background-color: #3d3d3d;
+    border-color: #4d4d4d;
+    color: #ffffff;
+}
+
+.page-link:hover {
+    background-color: #4d4d4d;
+    color: #ffffff;
+}
+
+/* Form elements */
+input, select, textarea {
+    background-color: #3d3d3d;
+    border-color: #4d4d4d;
+    color: #ffffff;
+}
+
+/* Add some accent colors */
+.accent-yellow {
+    border-left: 4px solid #ffc107;
+}
+
+.accent-blue {
+    border-left: 4px solid #007bff;
+}
+
+.accent-green {
+    border-left: 4px solid #28a745;
+}
+
+.accent-purple {
+    border-left: 4px solid #6f42c1;
+}
+
+/* Login and Registration page styles */
+.background-image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 0;
+}
+
+.content-wrapper {
+    position: relative;
+    z-index: 1;
+}
+
+.card {
+    background-color: rgba(45, 45, 45, 0.8);
+    border: none;
+}
+
+.card-header {
+    background-color: rgba(53, 53, 53, 0.8);
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-body {
+    color: #ffffff;
+}
+
+.form-control {
+    background-color: rgba(61, 61, 61, 0.8);
+    border-color: rgba(77, 77, 77, 0.8);
+    color: #ffffff;
+}
+
+.form-control:focus {
+    background-color: rgba(61, 61, 61, 1);
+    border-color: #007bff;
+    color: #ffffff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+a {
+    color: #007bff;
+}
+
+a:hover {
+    color: #0056b3;
+}
+
+/* Admin page styles */
+.nav-link {
+    color: #ffffff;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: #007bff;
+}
+
+.table {
+    color: #ffffff;
+    background-color: rgba(45, 45, 45, 0.8);
+}
+
+.table thead th {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.table td, .table th {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Card styles for dashboard */
+.card.bg-primary, .card.bg-success, .card.bg-warning, .card.bg-danger {
+    background-color: rgba(45, 45, 45, 0.8) !important;
+}
+
+.card-title {
+    color: #ffffff;
+}
