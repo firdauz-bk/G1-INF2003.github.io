@@ -84,6 +84,7 @@
                             <input type="hidden" name="delete_id" value="{{ customization.customization_id }}">
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this customization?');">Delete</button>
                         </form>
+                        <button type="button" class="btn btn-info btn-sm preview-saved" data-brand="{{ customization.brand_name }}" data-model="{{ customization.model_name }}" data-color="{{ customization.color_name }}" data-wheel="{{ customization.wheel_name }}">Preview</button>
                     </td>
                 </tr>
             {% endfor %}
@@ -113,6 +114,18 @@
     // Add event listener to Preview button to update the preview when clicked
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('preview-button').addEventListener('click', updatePreview);
+
+        // Add event listener for preview buttons for saved customizations
+        document.querySelectorAll('.preview-saved').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const brand = button.getAttribute('data-brand').toLowerCase().replace(/ /g, '_');
+                const model = button.getAttribute('data-model').toLowerCase().replace(/ /g, '_');
+                const color = button.getAttribute('data-color').toLowerCase().replace(/ /g, '_');
+                const wheel = button.getAttribute('data-wheel').toLowerCase().replace(/ /g, '_');
+
+                updateSavedCustomizationPreview(brand, model, color, wheel);
+            });
+        });
     });
 
     function updatePreview() {
@@ -124,12 +137,23 @@
 
         // Ensure all selections are made before showing the preview
         if (brand && model && color && wheel) {
-            const images = [];
-            for (let i = 1; i <= 19; i++) {
-                images.push(`/static/images/cars/${brand}/${model}/${color}/${wheel}/${i}.webp`);
-            }
+            loadCarImages(brand, model, color, wheel);
+        }
+    }
 
-            // Initialize or update SpriteSpin
+    function updateSavedCustomizationPreview(brand, model, color, wheel) {
+        // Load car images for the saved customization
+        loadCarImages(brand, model, color, wheel);
+    }
+
+    function loadCarImages(brand, model, color, wheel) {
+        const images = [];
+        for (let i = 1; i <= 19; i++) {
+            images.push(`/static/images/cars/${brand}/${model}/${color}/${wheel}/${i}.webp`);
+        }
+
+        // Initialize or update SpriteSpin
+        if (images.length > 0) {
             $("#car-viewer").spritespin({
                 source: images,
                 width: 700,  // Set the desired width of the viewer
