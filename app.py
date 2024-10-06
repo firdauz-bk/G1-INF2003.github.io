@@ -223,6 +223,21 @@ def update_user(user_id):
     conn.close()
     return render_template('update_user.html', user=user)
 
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+    
+    user = User.get(user_id)
+    if user:
+        user.delete()
+        flash('User deleted successfully')
+    else:
+        flash('User not found')
+    return redirect(url_for('admin'))
+
 @app.route('/post/<int:post_id>', methods=['GET'])
 def view_post(post_id):
     conn = get_db_connection()
