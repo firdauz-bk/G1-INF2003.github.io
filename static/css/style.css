@@ -323,3 +323,15 @@ main {
     background-color: #c82333;
     border-color: #bd2130;
 }
+
+.car-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .car-image-container {
+    width: 800px;  
+    height: 450px;
+    overflow: hidden;
+  }
