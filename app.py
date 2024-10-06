@@ -446,9 +446,9 @@ def forum():
     selected_wheel_id = request.args.get('wheel')
     
     # Pagination settings
-    page = request.args.get('page', 1, type=int)  # Get the page number from the URL, default to 1
-    per_page = 5  # Number of posts per page
-    offset = (page - 1) * per_page  # Calculate the offset
+    page = request.args.get('page', 1, type=int)
+    per_page = 5
+    offset = (page - 1) * per_page
 
     # Construct the base query for posts, including category
     query = '''
@@ -517,8 +517,10 @@ def forum():
     total_posts = conn.execute(total_posts_query, total_params).fetchone()['total']
     total_pages = (total_posts + per_page - 1) // per_page  # Calculate total pages
 
-    # Fetch all available customizations for the dropdown
-    customizations = conn.execute('SELECT customization_id, customization_name FROM customization WHERE user_id = ?', (current_user.id,)).fetchall()
+    # Fetch all available customizations for the dropdown only if user is authenticated
+    customizations = []
+    if current_user.is_authenticated:
+        customizations = conn.execute('SELECT customization_id, customization_name FROM customization WHERE user_id = ?', (current_user.id,)).fetchall()
 
     # Fetch dropdown options: brands, colors, and wheels
     brands = conn.execute('SELECT * FROM brand').fetchall()
@@ -544,7 +546,6 @@ def forum():
                            selected_wheel_id=selected_wheel_id,
                            page=page,
                            total_pages=total_pages)
-
 
 
 @app.route('/search', methods=['GET'])
