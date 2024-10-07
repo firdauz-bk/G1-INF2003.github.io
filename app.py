@@ -288,22 +288,30 @@ def create_post():
         if category == 'customization showcase' and not customization_id:
             flash('Customization is required for the Customization Showcase category!')
             return redirect(url_for('create_post'))
+        
+        # Set customization_id to None if not provided or empty
+        if customization_id == "" or customization_id is None:
+            customization_id = None
 
         # Insert the new post into the database
         conn = get_db_connection()
+        conn.execute('INSERT INTO post (title, description, user_id, customization_id, category) VALUES (?, ?, ?, ?, ?)',
+                     (title, description, current_user.id, customization_id, category))
 
-        if category == "customization showcase":
-            conn.execute('INSERT INTO post (title, description, user_id, customization_id, category) VALUES (?, ?, ?, ?, ?)',
-                         (title, description, current_user.id, customization_id, category))
-        else:
-            conn.execute('INSERT INTO post (title, description, user_id, category) VALUES (?, ?, ?, ?)',
-                         (title, description, current_user.id, category))
+
+        # if category == "customization showcase":
+        #     conn.execute('INSERT INTO post (title, description, user_id, customization_id, category) VALUES (?, ?, ?, ?, ?)',
+        #                  (title, description, current_user.id, customization_id, category))
+        # else:
+        #     conn.execute('INSERT INTO post (title, description, user_id, category) VALUES (?, ?, ?, ?)',
+        #                  (title, description, current_user.id, category))
 
         conn.commit()
         conn.close()
 
         # Show success message and redirect to the forum page
         flash('Post created successfully!')
+        print(f"Customization ID: {customization_id}")
         return redirect(url_for('forum'))
 
     # Fetch all available customizations for the dropdown that belong to the current user

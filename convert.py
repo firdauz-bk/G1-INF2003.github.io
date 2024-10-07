@@ -15,7 +15,7 @@ def convert_to_webp(input_directory, output_directory):
 
     # Loop through files in the input directory
     for filename in os.listdir(input_directory):
-        if filename.endswith('.jpg') or filename.endswith('.png'):
+        if filename.endswith('.jpg') or filename.endswith('.avif'):
             input_path = os.path.join(input_directory, filename)
             output_path = os.path.join(output_directory, os.path.splitext(filename)[0] + '.webp')
             
@@ -28,6 +28,6 @@ def convert_to_webp(input_directory, output_directory):
                 print(f"Failed to convert {filename}: {e}")
 
 if __name__ == "__main__":
-    input_dir = "static\images\cars\BMW\X7\Blue\Steel"  # Replace with your input directory path
-    output_dir = "static\images\cars\BMW\X7\Blue\Steel"  # Replace with your output directory path
+    input_dir = "static\images\cars\Honda\Civic\Blue\Alloy"  # Replace with your input directory path
+    output_dir = "static\images\cars\Honda\Civic\Blue\Alloy"  # Replace with your output directory path
     convert_to_webp(input_dir, output_dir)
