@@ -264,9 +264,23 @@ def view_post(post_id):
         ORDER BY c.created_at DESC
     ''', (post_id,)).fetchall()
 
+        # Fetch customization details if customization_id exists
+    customization_data = None
+    if post['customization_id']:
+        customization_data = conn.execute('''
+            SELECT brand.name AS brand_name, model.name AS model_name, 
+                   color.name AS color_name, wheel_set.name AS wheel_name
+            FROM customization
+            JOIN model ON customization.model_id = model.model_id
+            JOIN brand ON model.brand_id = brand.brand_id
+            JOIN color ON customization.color_id = color.color_id
+            JOIN wheel_set ON customization.wheel_id = wheel_set.wheel_id
+            WHERE customization.customization_id = ?
+        ''', (post['customization_id'],)).fetchone()
+
     conn.close()
     
-    return render_template('view_post.html', post=post, comments=comments)
+    return render_template('view_post.html', post=post, comments=comments, customization_data=customization_data)
 
 
 @app.route('/createpost', methods=['GET', 'POST'])
@@ -446,6 +460,9 @@ def delete_comment(comment_id):
 
 @app.route('/forum')
 def forum():
+    print(current_user.__dict__)
+    print(current_user.is_authenticated)
+    print(current_user.admin)
     conn = get_db_connection()
 
     # Get filter parameters from request args
@@ -468,7 +485,7 @@ def forum():
         LEFT JOIN customization c ON p.customization_id = c.customization_id
         WHERE 1=1
     '''
-
+    
     # Add filters to the query if selected
     params = []
     if selected_brand_id:
@@ -489,7 +506,7 @@ def forum():
     # Execute the query
     posts = conn.execute(query, params).fetchall()
 
-    # Fetch comments for each post
+    # Fetch comments and customization details for each post
     posts_with_comments = []
     for post in posts:
         comments = conn.execute('''
@@ -500,10 +517,28 @@ def forum():
             ORDER BY c.created_at DESC
         ''', (post['post_id'],)).fetchall()
 
+        # Fetch customization details if customization_id exists
+        customization_data = None
+        if post['customization_id']:
+            customization_data = conn.execute('''
+                SELECT brand.name AS brand_name, model.name AS model_name, 
+                       color.name AS color_name, wheel_set.name AS wheel_name
+                FROM customization
+                JOIN model ON customization.model_id = model.model_id
+                JOIN brand ON model.brand_id = brand.brand_id
+                JOIN color ON customization.color_id = color.color_id
+                JOIN wheel_set ON customization.wheel_id = wheel_set.wheel_id
+                WHERE customization.customization_id = ?
+            ''', (post['customization_id'],)).fetchone()
+
+        # Append post with its comments and customization data (if any)
         posts_with_comments.append({
             'post': post,
-            'comments': comments
+            'comments': comments,
+            'customization_data': customization_data
         })
+
+    
 
     # Fetch total posts for pagination
     total_posts_query = '''

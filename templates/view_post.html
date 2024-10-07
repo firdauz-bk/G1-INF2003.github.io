@@ -3,16 +3,18 @@
 {% block title %}{{ post['title'] }}{% endblock %}
 
 {% block content %}
+<a href="{{ url_for('forum') }}" class="btn btn-secondary mb-3">&larr; Back to Forum</a>
+
 <div class="container mt-5">
     <h1>{{ post['title'] }}</h1>
-    <p>{{ post['description'] }}</p>
-    <small class="text-muted">Posted by {{ post['username'] }} on {{ post['created_at'] }}</small>
-    
     {% if post['customization_name'] %}
         <p>Customization: {{ post['customization_name'] }} (ID: {{ post['customization_id'] }})</p>
+        <div id="car-viewer" class="mb-5"></div>
     {% else %}
         <p>Customization: None</p>
     {% endif %}
+    <p>{{ post['description'] }}</p>
+    <small class="text-muted">Posted by {{ post['username'] }} on {{ post['created_at'] }}</small>
     
     <hr>
     
@@ -44,4 +46,55 @@
         <button type="submit" class="btn btn-primary mt-2">Add Comment</button>
     </form>
 </div>
+
+<div id="car-data"
+     data-brand="{{ customization_data['brand_name'] | lower | replace(' ', '_') }}"
+     data-model="{{ customization_data['model_name'] | lower | replace(' ', '_') }}"
+     data-color="{{ customization_data['color_name'] | lower | replace(' ', '_') }}"
+     data-wheel="{{ customization_data['wheel_name'] | lower | replace(' ', '_') }}">
+</div>
+
+{% if post['customization_name'] %}
+
+<!-- Include the script to handle dynamic model loading -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<!-- Add jQuery first (required by SpriteSpin) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Add SpriteSpin -->
+<script src="{{ url_for('static', filename='js/spritespin.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const carData = document.getElementById('car-data');
+        const brand = carData.dataset.brand;
+        const model = carData.dataset.model;
+        const color = carData.dataset.color;
+        const wheel = carData.dataset.wheel;
+        loadCarImages(brand, model, color, wheel);
+    });
+
+    function loadCarImages(brand, model, color, wheel) {
+        const images = [];
+        for (let i = 1; i <= 19; i++) {
+            images.push(`/static/images/cars/${brand}/${model}/${color}/${wheel}/${i}.webp`);
+        }
+
+        // Initialize or update SpriteSpin
+        if (images.length > 0) {
+            $("#car-viewer").spritespin({
+                source: images,
+                width: 700,  // Set the desired width of the viewer
+                height: 400, // Set the desired height of the viewer
+                sense: -1,   // Change this value to reverse rotation direction
+                frameTime: 60,
+                loop: false,
+                animate: false,
+                plugins: [
+                    'drag',    // Allow dragging to rotate
+                    '360'      // Enables 360 degree mode
+                ]
+            });
+        }
+    }
+</script>
+{% endif %}
 {% endblock %}

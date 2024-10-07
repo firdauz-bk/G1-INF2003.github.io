@@ -76,10 +76,11 @@
                             <div class="p-3 border rounded">
                                 <h3>{{ item.post['title'] }}</h3>
                                 <p>{{ item.post['description'] }}</p>
-                               
+
                                 {% if item.post['customization_name'] %}
                                     <p class="mt-2">Customization: {{ item.post['customization_name'] }} (ID: {{ item.post['customization_id'] }})</p>
-                                {% else %}
+                                    <!-- Display a thumbnail image -->
+                                    <img src="/static/images/cars/{{ item.customization_data['brand_name'] | lower | replace(' ', '_') }}/{{ item.customization_data['model_name'] | lower | replace(' ', '_') }}/{{ item.customization_data['color_name'] | lower | replace(' ', '_') }}/{{ item.customization_data['wheel_name'] | lower | replace(' ', '_') }}/5.webp" class="img-thumbnail mb-3" alt="Car Customization Thumbnail">
                                 {% endif %}
                                 <small class="text-muted">Posted by {{ item.post['username'] }} on {{ item.post['created_at'] }}</small>
                             </div>
