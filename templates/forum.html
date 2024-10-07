@@ -76,7 +76,7 @@
                             <div class="p-3 border rounded">
                                 <h3>{{ item.post['title'] }}</h3>
                                 <p>{{ item.post['description'] }}</p>
-
+            
                                 {% if item.post['customization_name'] %}
                                     <p class="mt-2">Customization: {{ item.post['customization_name'] }} (ID: {{ item.post['customization_id'] }})</p>
                                     <!-- Display a thumbnail image -->
@@ -84,23 +84,23 @@
                                 {% endif %}
                                 <small class="text-muted">Posted by {{ item.post['username'] }} on {{ item.post['created_at'] }}</small>
                             </div>
-                            <p class="mt-2">
-                                {% if item.post['category'] == 'help' %}
-                                    <span class="badge bg-info text-dark">
-                                        <i class="fas fa-life-ring"></i> Help
-                                    </span>
-                                {% elif item.post['category'] == 'customization_showcase' %}
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-paint-brush"></i> Customization Showcase
-                                    </span>
-                                {% elif item.post['category'] == 'discussion' %}
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="fas fa-comments"></i> Discussion
-                                    </span>
-                                {% endif %}
-                            </p>
                         </a>
-
+                        <p class="mt-2">
+                            {% if item.post['category'] == 'help' %}
+                                <span class="badge bg-info text-dark">
+                                    <i class="fas fa-life-ring"></i> Help
+                                </span>
+                            {% elif item.post['category'] == 'customization_showcase' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-paint-brush"></i> Customization Showcase
+                                </span>
+                            {% elif item.post['category'] == 'discussion' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-comments"></i> Discussion
+                                </span>
+                            {% endif %}
+                        </p>
+            
                         <!-- Edit and delete options for post owner or admin -->
                         {% if current_user.is_authenticated and (current_user.id == item.post['user_id'] or current_user.admin) %}
                             <div class="mt-2">

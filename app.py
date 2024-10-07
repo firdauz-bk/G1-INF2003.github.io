@@ -460,9 +460,6 @@ def delete_comment(comment_id):
 
 @app.route('/forum')
 def forum():
-    print(current_user.__dict__)
-    print(current_user.is_authenticated)
-    print(current_user.admin)
     conn = get_db_connection()
 
     # Get filter parameters from request args
@@ -804,10 +801,17 @@ def customize():
 @login_required
 def edit_post(post_id):
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM post WHERE post_id = ? AND user_id = ?', (post_id, current_user.id)).fetchone()
 
+    # Allow either the original author or an admin to edit the post
+    post = conn.execute('SELECT * FROM post WHERE post_id = ?', (post_id,)).fetchone()
+
+    # Check if the post exists and the current user has the right permissions
     if not post:
-        flash('Post not found or you do not have permission to edit this post.')
+        flash('Post not found.', 'danger')
+        return redirect(url_for('forum'))
+
+    if current_user.id != post['user_id'] and not current_user.admin:
+        flash('You do not have permission to edit this post.', 'danger')
         return redirect(url_for('forum'))
 
     if request.method == 'POST':
@@ -816,34 +820,47 @@ def edit_post(post_id):
         customization_id = request.form.get('customization_id')
 
         if not title or not description:
-            flash('Title and description are required fields!')
+            flash('Title and description are required fields!', 'danger')
         else:
             conn.execute('''
                 UPDATE post SET title = ?, description = ?, customization_id = ? WHERE post_id = ?
             ''', (title, description, customization_id, post_id))
             conn.commit()
             conn.close()
-            flash('Post updated successfully.')
+            flash('Post updated successfully.', 'success')
             return redirect(url_for('forum'))
 
+    # Fetch customizations to allow the user to change customization of the post
     customizations = conn.execute('SELECT customization_id, customization_name FROM customization WHERE user_id = ?', (current_user.id,)).fetchall()
     conn.close()
+
     return render_template('editpost.html', post=post, customizations=customizations)
 
 @app.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
 def delete_post(post_id):
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM post WHERE post_id = ? AND user_id = ?', (post_id, current_user.id)).fetchone()
+    
+    # Fetch the post to verify ownership or admin rights
+    post = conn.execute('SELECT * FROM post WHERE post_id = ?', (post_id,)).fetchone()
 
-    if not post:
-        flash('Post not found or you do not have permission to delete this post.')
+    # If the post does not exist or user has no permission, flash an error
+    if post is None:
+        flash('Post not found.', 'danger')
+        conn.close()
         return redirect(url_for('forum'))
 
+    if current_user.id != post['user_id'] and not current_user.admin:
+        flash('You do not have permission to delete this post.', 'danger')
+        conn.close()
+        return redirect(url_for('forum'))
+
+    # If the user is authorized, delete the post
     conn.execute('DELETE FROM post WHERE post_id = ?', (post_id,))
     conn.commit()
     conn.close()
-    flash('Post deleted successfully.')
+
+    flash('Post has been deleted successfully.', 'success')
     return redirect(url_for('forum'))
 
 
@@ -1046,46 +1063,48 @@ def brand_type_delete(brand_id):
     flash('Brand deleted successfully!')
     return redirect(url_for('admin') + '#brands')
 
-    return redirect(url_for('brand_type'))
-
 @app.route('/create_wheel_set', methods=['GET', 'POST'])
 @login_required
 def create_wheel_set():
-    if not current_user.admin:
-        flash('Access denied. Admin privileges required.')
-        return redirect(url_for('admin'))
-    
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        conn = get_db_connection()
-        conn.execute('INSERT INTO wheel_set (name, description) VALUES (?, ?)', (name, description))
-        conn.commit()
-        conn.close()
-        flash('Wheel set created successfully.')
-        return redirect(url_for('admin') + '#wheel_sets')
-    
+
+        if not name:
+            flash('Wheel Set Name is required', 'danger')
+        else:
+            conn = get_db_connection()
+            conn.execute('INSERT INTO wheel_set (name, description) VALUES (?, ?)', (name, description))
+            conn.commit()
+            conn.close()
+            flash('Wheel Set created successfully.', 'success')
+            return redirect(url_for('admin'))
+
     return render_template('create_wheel_set.html')
+
 
 @app.route('/edit_wheel_set/<int:wheel_id>', methods=['GET', 'POST'])
 @login_required
 def edit_wheel_set(wheel_id):
-    if not current_user.admin:
-        flash('Access denied. Admin privileges required.')
-        return redirect(url_for('admin'))
-    
     conn = get_db_connection()
     wheel_set = conn.execute('SELECT * FROM wheel_set WHERE wheel_id = ?', (wheel_id,)).fetchone()
-    
+
+    if not wheel_set:
+        flash('Wheel set not found.', 'danger')
+        return redirect(url_for('your_view_where_wheel_sets_are_listed'))
+
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
-        conn.execute('UPDATE wheel_set SET name = ?, description = ? WHERE wheel_id = ?', (name, description, wheel_id))
-        conn.commit()
-        conn.close()
-        flash('Wheel set updated successfully.')
-        return redirect(url_for('admin') + '#wheel_sets')
-    
+
+        if not name:
+            flash('Wheel set name is required.', 'danger')
+        else:
+            conn.execute('UPDATE wheel_set SET name = ?, description = ? WHERE wheel_id = ?', (name, description, wheel_id))
+            conn.commit()
+            flash('Wheel set updated successfully.', 'success')
+            return redirect(url_for('admin'))
+
     conn.close()
     return render_template('edit_wheel_set.html', wheel_set=wheel_set)
 
@@ -1102,6 +1121,69 @@ def delete_wheel_set(wheel_id):
     conn.close()
     flash('Wheel set deleted successfully.')
     return redirect(url_for('admin') + '#wheel_sets')
+
+@app.route('/create_color', methods=['GET', 'POST'])
+@login_required
+def create_color():
+    if request.method == 'POST':
+        name = request.form['name']
+
+        if not name:
+            flash('Color name is required.', 'danger')
+        else:
+            conn = get_db_connection()
+            conn.execute('INSERT INTO color (name) VALUES (?)', (name,))
+            conn.commit()
+            conn.close()
+            flash('Color created successfully.', 'success')
+            return redirect(url_for('admin'))
+
+    return render_template('create_color.html')
+
+@app.route('/edit_color/<int:color_id>', methods=['GET', 'POST'])
+@login_required
+def edit_color(color_id):
+    conn = get_db_connection()
+    color = conn.execute('SELECT * FROM color WHERE color_id = ?', (color_id,)).fetchone()
+
+    if not color:
+        flash('Color not found.', 'danger')
+        return redirect(url_for('admin'))
+
+    if request.method == 'POST':
+        name = request.form['name']
+
+        if not name:
+            flash('Color name is required.', 'danger')
+        else:
+            conn.execute('UPDATE color SET name = ? WHERE color_id = ?', (name, color_id))
+            conn.commit()
+            flash('Color updated successfully.', 'success')
+            return redirect(url_for('admin'))
+
+    conn.close()
+    return render_template('edit_color.html', color=color)
+
+@app.route('/delete_color/<int:color_id>', methods=['POST'])
+@login_required
+def delete_color(color_id):
+    if not current_user.admin:
+        flash('You do not have permission to delete colors.', 'danger')
+        return redirect(url_for('admin_dashboard'))  # Replace with your admin dashboard view
+
+    conn = get_db_connection()
+    color = conn.execute('SELECT * FROM color WHERE color_id = ?', (color_id,)).fetchone()
+
+    if not color:
+        flash('Color not found.', 'danger')
+        return redirect(url_for('admin_dashboard'))  # Replace with your admin dashboard view
+
+    conn.execute('DELETE FROM color WHERE color_id = ?', (color_id,))
+    conn.commit()
+    conn.close()
+
+    flash('Color deleted successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))  # Replace with your admin dashboard view
 
 if __name__ == '__main__':
     app.run(debug=True)
