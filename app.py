@@ -349,6 +349,8 @@ def posts_by_category(category_name):
         WHERE p.category = ?
         ORDER BY p.created_at DESC
     '''
+
+    
     
     posts = conn.execute(query, (category_name,)).fetchall()
     conn.close()

@@ -73,10 +73,26 @@
                 {% for item in posts_with_comments %}
                     <li class="list-group-item">
                         <a href="{{ url_for('view_post', post_id=item.post['post_id']) }}" class="text-decoration-none">
-                            <div class="p-3 border rounded">
+                            <div class="post-container p-3 border rounded position-relative">
+                                <p class="mt-2">
+                                    {% if item.post['category'] == 'help' %}
+                                        <span class="badge bg-info text-dark">
+                                            <i class="fas fa-life-ring"></i> Help
+                                        </span>
+                                    {% elif item.post['category'] == 'customization_showcase' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-paint-brush"></i> Customization Showcase
+                                        </span>
+                                    {% elif item.post['category'] == 'discussion' %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-comments"></i> Discussion
+                                        </span>
+                                    {% endif %}
+                                </p>
+                    
                                 <h3>{{ item.post['title'] }}</h3>
                                 <p>{{ item.post['description'] }}</p>
-            
+                                
                                 {% if item.post['customization_name'] %}
                                     <p class="mt-2">Customization: {{ item.post['customization_name'] }} (ID: {{ item.post['customization_id'] }})</p>
                                     <!-- Display a thumbnail image -->
@@ -85,28 +101,16 @@
                                 <small class="text-muted">Posted by {{ item.post['username'] }} on {{ item.post['created_at'] }}</small>
                             </div>
                         </a>
-                        <p class="mt-2">
-                            {% if item.post['category'] == 'help' %}
-                                <span class="badge bg-info text-dark">
-                                    <i class="fas fa-life-ring"></i> Help
-                                </span>
-                            {% elif item.post['category'] == 'customization_showcase' %}
-                                <span class="badge bg-success">
-                                    <i class="fas fa-paint-brush"></i> Customization Showcase
-                                </span>
-                            {% elif item.post['category'] == 'discussion' %}
-                                <span class="badge bg-warning text-dark">
-                                    <i class="fas fa-comments"></i> Discussion
-                                </span>
-                            {% endif %}
-                        </p>
-            
                         <!-- Edit and delete options for post owner or admin -->
                         {% if current_user.is_authenticated and (current_user.id == item.post['user_id'] or current_user.admin) %}
-                            <div class="mt-2">
-                                <a href="{{ url_for('edit_post', post_id=item.post['post_id']) }}" class="btn btn-secondary btn-sm">Edit Post</a>
+                            <div class="post-actions">
+                                <a href="{{ url_for('edit_post', post_id=item.post['post_id']) }}" class="btn btn-sm edit-button" title="Edit Post">
+                                    <i class="fas fa-edit"></i>
+                                </a>
                                 <form method="POST" action="{{ url_for('delete_post', post_id=item.post['post_id']) }}" style="display:inline;">
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this post?');">Delete Post</button>
+                                    <button type="submit" class="btn btn-sm delete-button" onclick="return confirm('Are you sure you want to delete this post?');" title="Delete Post">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
                                 </form>
                             </div>
                         {% endif %}
