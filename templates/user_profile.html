@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.username }}'s Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="profile-container">
+        <h1>{{ user.username }}'s Profile</h1>
+
+        <div class="user-details">
+            <p><strong>Email:</strong> {{ user.email }}</p>
+        </div>
+
+        <h2 id="preview-of-your-customization" class="text-center mb-4">Preview of Your Customization</h2>
+        <div id="car-viewer" class="mb-5"></div>
+
+        <h2>Your Customizations</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Customization ID</th>
+                    <th>Customization Name</th>
+                    <th>Brand</th>
+                    <th>Model</th>
+                    <th>Color</th>
+                    <th>Wheel Set</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customization in customizations %}
+                    <tr>
+                        <td>{{ customization.customization_id }}</td>
+                        <td>{{ customization.customization_name }}</td>
+                        <td>{{ customization.brand_name }}</td>
+                        <td>{{ customization.model_name }}</td>
+                        <td>{{ customization.color_name }}</td>
+                        <td>{{ customization.wheel_name }}</td>
+                        <td>{{ customization.created_at }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_customization', customization_id=customization.customization_id) }}" class="btn btn-warning btn-sm">Edit</a>
+                            <form method="POST" action="{{ url_for('customize') }}" style="display:inline;">
+                                <input type="hidden" name="delete_id" value="{{ customization.customization_id }}">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this customization?');">Delete</button>
+                            </form>
+                            <button type="button" class="btn btn-info btn-sm preview-saved" data-brand="{{ customization.brand_name }}" data-model="{{ customization.model_name }}" data-color="{{ customization.color_name }}" data-wheel="{{ customization.wheel_name }}">Preview</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2>Your Posts</h2>
+        {% if posts %}
+            <ul class="list-group">
+                {% for post in posts %}
+                    <li class="list-group-item">
+                        <a href="{{ url_for('view_post', post_id=post.post_id) }}" class="text-decoration-none">
+                            <div class="post-container p-3 border rounded position-relative">
+                                <p class="mt-2">
+                                    {% if post.category == 'help' %}
+                                        <span class="badge bg-info text-dark">
+                                            <i class="fas fa-life-ring"></i> Help
+                                        </span>
+                                    {% elif post.category == 'customization_showcase' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-paint-brush"></i> Customization Showcase
+                                        </span>
+                                    {% elif post.category == 'discussion' %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-comments"></i> Discussion
+                                        </span>
+                                    {% endif %}
+                                </p>
+                                <h3>{{ post.title }}</h3>
+                                <p>{{ post.description }}</p>
+                                {% if post.customization_name %}
+                                    <p class="mt-2">Customization: {{ post.customization_name }} (ID: {{ post.customization_id }})</p>
+                                    <img src="/static/images/cars/{{ post.customization_data.brand_name | lower | replace(' ', '_') }}/{{ post.customization_data.model_name | lower | replace(' ', '_') }}/{{ post.customization_data.color_name | lower | replace(' ', '_') }}/{{ post.customization_data.wheel_name | lower | replace(' ', '_') }}/5.webp" class="img-thumbnail mb-3" alt="Car Customization Thumbnail">
+                                {% endif %}
+                                <small class="text-muted">Posted by {{ post.username }} on {{ post.created_at }}</small>
+                            </div>
+                        </a>
+                        <!-- Edit and delete options for post owner or admin -->
+                        {% if current_user.is_authenticated and (current_user.id == post.user_id or current_user.admin) %}
+                            <div class="post-actions">
+                                <a href="{{ url_for('edit_post', post_id=post.post_id) }}" class="btn btn-sm edit-button" title="Edit Post">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('delete_post', post_id=post.post_id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm delete-button" onclick="return confirm('Are you sure you want to delete this post?');" title="Delete Post">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-center">No posts available.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
+{% endblock %}

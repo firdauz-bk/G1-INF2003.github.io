@@ -1,46 +1,121 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Edit Customization</h1>
+<h1 class="text-center">Edit Customization</h1>
 
-<form method="POST" action="{{ url_for('edit_customization', customization_id=customization.customization_id) }}">
-    
-    <label for="customization_name">Customization Name</label>
-    <input type="text" id="customization_name" name="customization_name" class="form-control" 
-           value="{{ customization.customization_name }}" required>
+<div class="container">
+    <form id="edit-customization-form" method="POST" action="{{ url_for('edit_customization', customization_id=customization.customization_id) }}" class="mb-5">
+        <div class="form-group">
+            <label for="customization_name">Customization Name</label>
+            <input type="text" id="customization_name" name="customization_name" class="form-control" 
+                   value="{{ customization.customization_name }}" required>
+        </div>
 
-    <label for="brand_id">Brand:</label>
-    <select name="brand_id" id="brand_id" onchange="loadModels()">
-        {% for brand in brands %}
-            <option value="{{ brand.brand_id }}" {% if brand.brand_id == customization.brand_id %}selected{% endif %}>{{ brand.name }}</option>
-        {% endfor %}
-    </select>
+        <div class="form-group">
+            <label for="brand_id">Brand:</label>
+            <select name="brand_id" id="brand_id" class="form-control" required>
+                {% for brand in brands %}
+                    <option value="{{ brand.brand_id }}" {% if brand.brand_id == customization.brand_id %}selected{% endif %}>
+                        {{ brand.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <label for="model_id">Model:</label>
-    <select name="model_id" id="model_id" required>
-        <option value="" disabled>Select a model</option>
-        {% for model in models %}
-            <option value="{{ model.model_id }}" {% if model.model_id == customization.model_id %}selected{% endif %}>{{ model.name }}</option>
-        {% endfor %}
-    </select>
+        <div class="form-group">
+            <label for="model_id">Model:</label>
+            <select name="model_id" id="model_id" class="form-control" required>
+                <option value="" disabled>Select a model</option>
+                {% for model in models %}
+                    <option value="{{ model.model_id }}" {% if model.model_id == customization.model_id %}selected{% endif %}>
+                        {{ model.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <label for="color_id">Color:</label>
-    <select name="color_id" id="color_id">
-        {% for color in colors %}
-            <option value="{{ color.color_id }}" {% if color.color_id == customization.color_id %}selected{% endif %}>{{ color.name }}</option>
-        {% endfor %}
-    </select>
+        <div class="form-group">
+            <label for="color_id">Color:</label>
+            <select name="color_id" id="color_id" class="form-control">
+                {% for color in colors %}
+                    <option value="{{ color.color_id }}" {% if color.color_id == customization.color_id %}selected{% endif %}>
+                        {{ color.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <label for="wheel_id">Wheel Set:</label>
-    <select name="wheel_id" id="wheel_id">
-        {% for wheel in wheels %}
-            <option value="{{ wheel.wheel_id }}" {% if wheel.wheel_id == customization.wheel_id %}selected{% endif %}>{{ wheel.name }}</option>
-        {% endfor %}
-    </select>
+        <div class="form-group">
+            <label for="wheel_id">Wheel Set:</label>
+            <select name="wheel_id" id="wheel_id" class="form-control">
+                {% for wheel in wheels %}
+                    <option value="{{ wheel.wheel_id }}" {% if wheel.wheel_id == customization.wheel_id %}selected{% endif %}>
+                        {{ wheel.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <button type="submit">Update Customization</button>
-</form>
+        <button type="button" id="preview-button" class="btn btn-secondary">Preview Customization</button>
+        <button type="submit" class="btn btn-primary">Update Customization</button>
+    </form>
+</div>
 
 <!-- Include the script to handle dynamic model loading -->
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<!-- Add jQuery first (required by SpriteSpin) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Add SpriteSpin -->
+<script src="{{ url_for('static', filename='js/spritespin.js') }}"></script>
+<style>
+    #car-viewer {
+        width: 100%;
+        height: 100%;
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 2px solid #444;
+        background-color: #1f1f1f;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('preview-button').addEventListener('click', updatePreview);
+
+        function updatePreview() {
+            const brand = $('#brand_id option:selected').text().toLowerCase().replace(/ /g, '_');
+            const model = $('#model_id option:selected').text().toLowerCase().replace(/ /g, '_');
+            const color = $('#color_id option:selected').text().toLowerCase().replace(/ /g, '_');
+            const wheel = $('#wheel_id option:selected').text().toLowerCase().replace(/ /g, '_');
+
+            if (brand && model && color && wheel) {
+                loadCarImages(brand, model, color, wheel);
+            }
+        }
+
+        function loadCarImages(brand, model, color, wheel) {
+            const images = [];
+            for (let i = 1; i <= 19; i++) {
+                images.push(`/static/images/cars/${brand}/${model}/${color}/${wheel}/${i}.webp`);
+            }
+
+            if (images.length > 0) {
+                $("#car-viewer").spritespin({
+                    source: images,
+                    width: 700,
+                    height: 400,
+                    sense: -1,
+                    frameTime: 60,
+                    loop: false,
+                    animate: false,
+                    plugins: [
+                        'drag',
+                        '360'
+                    ]
+                });
+            }
+        }
+    });
+</script>
 {% endblock %}

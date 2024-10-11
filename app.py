@@ -238,6 +238,36 @@ def delete_user(user_id):
         flash('User not found')
     return redirect(url_for('admin'))
 
+@app.route('/profile')
+@login_required
+def profile():
+    # Fetch the logged-in user's information from current_user
+    user = current_user
+
+    # Fetch the user's posts from the database
+    conn = get_db_connection()
+    posts = conn.execute('SELECT * FROM post WHERE user_id = ?', (user.id,)).fetchall()
+
+    # Fetch the user's customizations from the database
+    customizations = conn.execute('''
+        SELECT c.customization_id, c.customization_name, b.name AS brand_name, 
+               m.name AS model_name, col.name AS color_name, w.name AS wheel_name
+        FROM customization c
+        JOIN model m ON c.model_id = m.model_id
+        JOIN brand b ON m.brand_id = b.brand_id
+        JOIN color col ON c.color_id = col.color_id
+        JOIN wheel_set w ON c.wheel_id = w.wheel_id
+        WHERE c.user_id = ?
+    ''', (user.id,)).fetchall()
+
+    conn.close()
+
+    # Render the profile page, passing in the user, posts, and customizations
+    return render_template('user_profile.html', user=user, posts=posts, customizations=customizations)
+
+
+
+
 @app.route('/post/<int:post_id>', methods=['GET'])
 def view_post(post_id):
     conn = get_db_connection()
