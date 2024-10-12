@@ -3,6 +3,7 @@ import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import time
 
 DATABASE = 'carcraft.db'
 
@@ -380,8 +381,6 @@ def posts_by_category(category_name):
         ORDER BY p.created_at DESC
     '''
 
-    
-    
     posts = conn.execute(query, (category_name,)).fetchall()
     conn.close()
 
@@ -532,6 +531,7 @@ def forum():
     params.append(per_page)
     params.append(offset)
 
+    start_time = time.time()
     # Execute the query
     posts = conn.execute(query, params).fetchall()
 
@@ -567,8 +567,6 @@ def forum():
             'customization_data': customization_data
         })
 
-    
-
     # Fetch total posts for pagination
     total_posts_query = '''
         SELECT COUNT(*) AS total FROM post p
@@ -598,6 +596,9 @@ def forum():
     brands = conn.execute('SELECT * FROM brand').fetchall()
     colors = conn.execute('SELECT * FROM color').fetchall()
     wheels = conn.execute('SELECT * FROM wheel_set').fetchall()
+    
+    endTime = time.time()
+    elapsed_time = f"{endTime - start_time:0.6f}"
 
     conn.close()
 
@@ -617,7 +618,8 @@ def forum():
                            selected_color_id=selected_color_id,
                            selected_wheel_id=selected_wheel_id,
                            page=page,
-                           total_pages=total_pages)
+                           total_pages=total_pages,
+                           elapsed_time=elapsed_time)
 
 
 @app.route('/search', methods=['GET'])
@@ -628,6 +630,7 @@ def search():
 
     conn = get_db_connection()
 
+    start_time = time.time()
     # Retrieve total number of posts that match the search query
     total_posts_query = conn.execute('''
         SELECT COUNT(DISTINCT p.post_id)
@@ -657,10 +660,13 @@ def search():
         JOIN user u ON c.user_id = u.user_id
         WHERE c.content LIKE ?
     ''', (f'%{query}%',)).fetchall()
+    
+    end_time = time.time()
+    searchTime = f"{end_time - start_time:0.6f}"
 
     conn.close()
 
-    return render_template('search_results.html', posts=posts, query=query, comments=comments, page=page, total_pages=total_pages)
+    return render_template('search_results.html', posts=posts, query=query, comments=comments, page=page, total_pages=total_pages, search_time=searchTime)
 
 
 

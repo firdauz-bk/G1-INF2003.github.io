@@ -66,6 +66,9 @@
 
             <div class="mb-3">
                 <a href="{{ url_for('create_post') }}" class="btn btn-primary">Create Post</a>
+                {% if elapsed_time %}
+                <p> Filter took {{ elapsed_time }} seconds.</p>
+                {% endif %}
             </div>
 
             {% if posts_with_comments %}
