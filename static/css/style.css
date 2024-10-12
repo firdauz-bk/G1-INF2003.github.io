@@ -255,15 +255,25 @@ a:hover {
     color: #ffffff;
 }
 /* Admin Dashboard Styles */
+/* Sidebar styling */
 .sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
-    z-index: 100;
-    padding: 48px 0 0;
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+    width: 250px; /* Fixed width for sidebar */
+    background-color: #343a40; /* Dark sidebar background */
+    padding-top: 60px; /* Space for the navbar */
+    z-index: 1000;
+    overflow-y: auto;
 }
+
+/* Ensure main content does not overlap */
+main {
+    margin-left: 180px; /* Matches sidebar width */
+    padding: 20px;
+}
+
 
 .sidebar-sticky {
     position: relative;
