@@ -361,3 +361,17 @@ main {
 .edit-button:hover i, .delete-button:hover i {
     color: #ff0000; /* Change color on hover */
 }
+
+.list-group-item {
+    position: relative; /* Ensures the comment block is the reference point for absolute positioning */
+}
+
+.comment-actions {
+    top: 0; 
+    right: 0;
+    position: absolute; /* Positions the buttons in the top-right corner of the comment */
+}
+
+.comment-actions .btn {
+    margin-left: 5px; /* Adds some space between the edit and delete buttons */
+}
