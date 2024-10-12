@@ -63,11 +63,9 @@ Below are the libraries required to run this project.
 
 ### Creating an Account
 
-[PUT SCREENSHOT HERE](readme_img/signin.png)
-
 In order to access all features of this website, an account must be created using the menu shown above. During account creation, it can be specified whether the account is a `regular user` or an `admin`.
 
-Assuming that the above set up was done, these accounts should be av
+Assuming that the above set up was done, these accounts should be available.
 
 | Username       | Password       | Type  |
 | -------------- | -------------- | ----- |
@@ -87,3 +85,21 @@ Assuming that the above set up was done, these accounts should be av
     - **Models**: Add, edit, or delete car models, which are based on brand and vehicle type.
     - **Colors**: Add, edit, or delete available colors for vehicle customization.
     - **Wheel Sets**: Add, edit, or delete different wheel sets that users can choose when customizing their vehicles.
+
+
+### Gallery
+
+<div style="display: flex;">
+    <img src="readme_img/signin.png" alt="Sign In" width="400"/>
+    <img src="readme_img/createuser.png" alt="Sign In" width="400"/>
+</div>
+
+<div style="display: flex;">
+    <img src="readme_img/forum.png" alt="Sign In" width="400"/>
+    <img src="readme_img/comments.png" alt="Sign In" width="400"/>
+</div>
+
+<div style="display: flex;">
+    <img src="readme_img/customization.png" alt="Sign In" width="400"/>
+    <img src="readme_img/admindashoboard.png" alt="Sign In" width="400"/>
+</div>
