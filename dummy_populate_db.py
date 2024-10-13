@@ -1,8 +1,8 @@
 import sqlite3
-from createtables import regenerate_tables
-from insert_fake_user import insert_users
-from insert_customizations import insert_customizations
-from insert_posts_and_comments import insert_posts_and_comments
+from python_init.createtables import regenerate_tables
+from python_init.insert_fake_user import insert_users
+from python_init.insert_customizations import insert_customizations
+from python_init.insert_posts_and_comments import insert_posts_and_comments
 
 
 # Define dummy data for each table
@@ -22,7 +22,8 @@ models = [
     ('Civic', 'Honda', 'Sports',),
     ('GR86', 'Toyota', 'Sports',),
     ('M5', 'BMW', 'Sedan',),
-    ('Prius', 'Toyota', 'SUV',)
+    ('Prius', 'Toyota', 'SUV',),
+    ('X7', 'BMW', 'SUV',)
 ]
 
 colors = [
@@ -97,7 +98,6 @@ if __name__ == "__main__":
     insert_colors()
     insert_wheel_sets()
     insert_models()
-
 
     print("Dummy data inserted successfully!")
 
