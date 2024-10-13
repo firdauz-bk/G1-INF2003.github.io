@@ -382,9 +382,34 @@ def posts_by_category(category_name):
     '''
 
     posts = conn.execute(query, (category_name,)).fetchall()
+
+    # Prepare the posts with customization data
+    posts_with_customization = []
+    for post in posts:
+        customization_data = None
+        if post['customization_id']:
+            customization_data = conn.execute('''
+                SELECT brand.name AS brand_name, model.name AS model_name, 
+                       color.name AS color_name, wheel_set.name AS wheel_name
+                FROM customization
+                JOIN model ON customization.model_id = model.model_id
+                JOIN brand ON model.brand_id = brand.brand_id
+                JOIN color ON customization.color_id = color.color_id
+                JOIN wheel_set ON customization.wheel_id = wheel_set.wheel_id
+                WHERE customization.customization_id = ?
+            ''', (post['customization_id'],)).fetchone()
+
+        # Append the post with customization data
+        posts_with_customization.append({
+            'post': post,
+            'customization_data': customization_data
+        })
+
     conn.close()
 
-    return render_template('category_posts.html', posts=posts, category_name=category_name)
+    return render_template('category_posts.html', 
+                           posts=posts_with_customization, 
+                           category_name=category_name)
 
 
 
