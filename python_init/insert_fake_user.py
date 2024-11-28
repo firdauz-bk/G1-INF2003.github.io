@@ -1,39 +1,59 @@
-import sqlite3
 import pandas as pd
 from werkzeug.security import generate_password_hash
+from pymongo import MongoClient
 
-# Function to insert data into the wheel_set table
-def insert_users():
-    # Connect to your SQLite database (adjust the path as necessary)
-    conn = sqlite3.connect('carcraft.db')
-    cursor = conn.cursor()
-
+def insert_users(db):
+    """
+    Inserts dummy users into the `users` collection in MongoDB.
+    """
     # Open CSV file
     try:
         df = pd.read_csv("users.csv")
     except Exception as e:
         print(e)
-        print("Users.csv not found. Quitting.")
+        print("users.csv not found. Quitting.")
         return
 
     # Load first 100 accounts
     df = df.head(100)
+    
+    # Prepare users data
+    users = []
     for username in df['author']:
         email = f"{username}@gmail.com"
         password_hash = generate_password_hash("password")
-        
-        cursor.execute('''
-            INSERT INTO user (username, email, password_hash, admin)
-            VALUES (?, ?, ?, ?)
-            ''', (username, email, password_hash, 0))
+        user_data = {
+            "username": username,
+            "email": email,
+            "password_hash": password_hash,
+            "admin": False  # Default non-admin
+        }
+        users.append(user_data)
 
-    # Insert admin accounts
-    cursor.execute('''
-        INSERT INTO user (username, email, password_hash, admin)
-        VALUES (?, ?, ?, ?)
-        ''', ("admin", "admin@admin.com", generate_password_hash("admin"), 1))
+    # Insert users into the MongoDB collection
+    try:
+        db["users"].insert_many(users)
+        print("User data successfully inserted!")
+    except Exception as e:
+        print(f"Error inserting user data: {e}")
     
-    print("User data successfully inserted!")
-    conn.commit()
-    # Close the database connection
-    conn.close()
+    # Insert admin accounts
+    admin_user = {
+        "username": "admin",
+        "email": "admin@admin.com",
+        "password_hash": generate_password_hash("admin"),
+        "admin": True
+    }
+    try:
+        db["users"].insert_one(admin_user)
+        print("Admin user successfully inserted!")
+    except Exception as e:
+        print(f"Error inserting admin user: {e}")
+
+# Example MongoDB connection and insertion
+if __name__ == "__main__":
+    # Connect to MongoDB
+    client = MongoClient("mongodb://localhost:27017/")
+    db = client["carcraft_db"]  # Your database name here
+    
+    insert_users(db)  # Call the function to insert users
