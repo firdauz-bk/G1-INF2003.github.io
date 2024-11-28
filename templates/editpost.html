@@ -13,9 +13,18 @@
         </div>
 
         <div class="mb-3">
-            <label for="customization_id" class="form-label">Customization ID:</label>
-            <textarea id="customization_id" name="customization_id" class="form-control" rows="5" required>{{ post['customization_id'] }}</textarea>
+            <label for="customization_id" class="form-label">Customization:</label>
+            <select id="customization_id" name="customization_id" class="form-control">
+                <option value="" disabled selected>Select a customization</option>
+                {% for customization in customizations %}
+                    <option value="{{ customization['_id'] }}" 
+                        {% if customization['_id'] == post.get('customization_id') %}selected{% endif %}>
+                        {{ customization['customization_name'] }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
+        
 
         <div class="mb-3">
             <label for="description" class="form-label">Description:</label>
