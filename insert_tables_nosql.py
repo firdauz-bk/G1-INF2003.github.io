@@ -39,28 +39,28 @@ wheel_sets = [
 
 # Functions to insert data into collections
 def insert_vehicle_types(db):
-    db["vehicle_types"].insert_many(vehicle_types)
+    db["vehicle_type"].insert_many(vehicle_types)
     print("Vehicle types inserted.")
 
 
 def insert_brands(db):
-    db["brands"].insert_many(brands)
+    db["brand"].insert_many(brands)
     print("Brands inserted.")
 
 
 def insert_colors(db):
-    db["colors"].insert_many(colors)
+    db["color"].insert_many(colors)
     print("Colors inserted.")
 
 
 def insert_wheel_sets(db):
-    db["wheel_sets"].insert_many(wheel_sets)
+    db["wheel_set"].insert_many(wheel_sets)
     print("Wheel sets inserted.")
 
 
 def insert_models(db):
-    vehicle_types_collection = db["vehicle_types"]
-    brands_collection = db["brands"]
+    vehicle_types_collection = db["vehicle_type"]
+    brands_collection = db["brand"]
 
     model_data = []
     for model in models:
@@ -74,7 +74,7 @@ def insert_models(db):
             "type_id": type_doc["_id"]
         })
 
-    db["models"].insert_many(model_data)
+    db["model"].insert_many(model_data)
     print("Models inserted.")
 
 
@@ -98,6 +98,9 @@ if __name__ == "__main__":
     # Insert additional data using predefined scripts
     insert_users(db)
     insert_customizations(db)
+    inserted_customizations = db["customization"].count_documents({})
+    print(f"Total customizations in database: {inserted_customizations}")
+
     insert_posts_and_comments(db)
 
     print("All dummy data inserted successfully!")

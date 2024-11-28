@@ -23,20 +23,24 @@ def insert_posts_and_comments(db, comment_count: int = 5):
     Inserts dummy posts and comments into the `posts` and `comments` collections in MongoDB.
     """
     # Fetch necessary data from MongoDB collections (equivalent of SELECT queries)
-    customizations = db["customization"].find({}, {"customization_id": 1})
-    users = db["user"].find({}, {"user_id": 1, "username": 1})
+    customizations = db["customization"].find({}, {"_id": 1})
+    users = list(db["user"].find({}, {"_id": 1}))  # Ensure it's `user_id`
+
+    # Convert customizations cursor to a list immediately
+    customizations_list = list(customizations)
+    users_list = list(users)
 
     # Generate Posts
     for user in users:
         category = random.choice(categories)  # Randomly select a category
         title = random.choice(titles)
         description = random.choice(descriptions)
-        user_id = user["user_id"]
+        user_id = user["_id"]
 
         if category == "customization_showcase":
-            if customizations.count() > 0:  # Check if there are any customizations
-                customization = random.choice(list(customizations))  # Randomly pick a customization
-                customization_id = customization["customization_id"]
+            if len(customizations_list) > 0:  # Check if there are any customizations
+                customization = random.choice(customizations_list)  # Randomly pick a customization
+                customization_id = customization["_id"]
                 post = {
                     "title": title,
                     "description": description,
@@ -62,17 +66,22 @@ def insert_posts_and_comments(db, comment_count: int = 5):
             }
         
         # Insert the post into the MongoDB collection
-        db["post"].insert_one(post)
+        try:
+            db["post"].insert_one(post)
+            print("Post inserted successfully")
+        except Exception as e:
+            print(f"Error inserting post: {e}")
+
 
     # Generate Comments
-    posts = db["post"].find({}, {"post_id": 1})
+    posts = db["post"].find({}, {"_id": 1})
 
     for post in posts:
-        post_id = post["post_id"]
+        post_id = post["_id"]
         for _ in range(comment_count):
             comment = random.choice(comments)
-            user = random.choice(list(users))  # Randomly pick a user
-            user_id = user["user_id"]
+            user = random.choice(users_list)  # Randomly pick a user
+            user_id = user["_id"]
             comment_document = {
                 "content": comment,
                 "user_id": user_id,
@@ -83,10 +92,12 @@ def insert_posts_and_comments(db, comment_count: int = 5):
 
     print("Successfully inserted posts and comments.")
 
+
 # Example MongoDB connection and insertion
 if __name__ == "__main__":
     # Connect to MongoDB
     client = MongoClient("mongodb://localhost:27017/")
-    db = client["carcraft_db"]  # Your database name here
-    
+    db = client["carcraft"]  # Your database name here
+    print(db.list_collection_names())
+
     insert_posts_and_comments(db)  # Call the function to insert posts and comments

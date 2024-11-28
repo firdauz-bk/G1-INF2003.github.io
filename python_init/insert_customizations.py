@@ -16,14 +16,17 @@ def insert_customizations(db):
     Inserts dummy customizations into the `customizations` collection in MongoDB.
     """
     # Fetch data from MongoDB collections (equivalent of SELECT queries)
-    colors = db["color"].find({}, {"color_id": 1})
-    wheel_sets = db["wheel_set"].find({}, {"wheel_id": 1})
-    users = db["user"].find({}, {"user_id": 1})
-    models = db["model"].find({}, {"model_id": 1})
+    colors = list(db["color"].find({}, {"_id": 1}))  # Check if the field is `color_id`
+    wheel_sets = list(db["wheel_set"].find({}, {"_id": 1}))  # Check if it's `wheel_set_id`
+    users = list(db["user"].find({}, {"_id": 1}))  # Ensure it's `user_id`
+    models = list(db["model"].find({}, {"_id": 1}))  # Ensure it's `model_id`
 
-    random.seed()
+    if not colors or not wheel_sets or not users or not models:
+        print("One or more collections are empty. Exiting.")
+        return
 
-    # Generate customizations using models
+    random.seed(42)  # Set a seed for reproducibility
+
     customization_count = 0
     for model in models:
         for color in colors:
@@ -37,10 +40,10 @@ def insert_customizations(db):
 
                 # Create the customization document
                 customization = {
-                    "user_id": user["user_id"],
-                    "model_id": model["model_id"],
-                    "color_id": color["color_id"],
-                    "wheel_id": wheel_set["wheel_id"],
+                    "user_id": user["_id"],  # Assuming this is the correct field name
+                    "model_id": model["_id"],  # Assuming this is the correct field name
+                    "color_id": color["_id"],  # Assuming this is the correct field name
+                    "wheel_set_id": wheel_set["_id"],  # Assuming this is the correct field name
                     "customization_name": name
                 }
 
@@ -57,6 +60,6 @@ def insert_customizations(db):
 if __name__ == "__main__":
     # Connect to MongoDB
     client = MongoClient("mongodb://localhost:27017/")
-    db = client["carcraft_db"]  # Your database name here
+    db = client["carcraft"]  # Your database name here
     
     insert_customizations(db)  # Call the function to insert customizations

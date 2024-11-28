@@ -32,7 +32,7 @@ def insert_users(db):
 
     # Insert users into the MongoDB collection
     try:
-        db["users"].insert_many(users)
+        db["user"].insert_many(users)
         print("User data successfully inserted!")
     except Exception as e:
         print(f"Error inserting user data: {e}")
@@ -45,7 +45,7 @@ def insert_users(db):
         "admin": True
     }
     try:
-        db["users"].insert_one(admin_user)
+        db["user"].insert_one(admin_user)
         print("Admin user successfully inserted!")
     except Exception as e:
         print(f"Error inserting admin user: {e}")
