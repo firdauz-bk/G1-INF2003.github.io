@@ -1480,7 +1480,7 @@ def create_model():
 
             # Insert the model into the database
             db.model.insert_one({
-                "model_name": model_name,
+                "name": model_name,
                 "brand_id": object_brand_id,
                 "type_id": object_type_id
             })
