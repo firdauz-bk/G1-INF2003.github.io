@@ -19,9 +19,6 @@ login_manager.login_view = 'login'
 client = MongoClient("mongodb://localhost:27017/")  # Replace with your MongoDB URI
 db = client['carcraft']
 
-
-toolbar = DebugToolbarExtension(app)
-
 class User(UserMixin):
     def __init__(self, user_id, username, email, password_hash, admin):
         self.id = user_id
@@ -342,7 +339,7 @@ def edit_customization(customization_id):
 
     return render_template(
         'edit_customization.html',
-        customization=customization,
+        customizations=customization,
         brands=brands,
         colors=colors,
         wheels=wheels,
@@ -883,20 +880,16 @@ def profile():
 @app.route('/edit_post/<post_id>', methods=['GET', 'POST'])
 @login_required
 def edit_post(post_id):
-    
-    # Find the post by ID
     try:
         post = db.post.find_one({'_id': ObjectId(post_id)})
     except:
         flash('Post not found.', 'danger')
         return redirect(url_for('forum'))
-        
-    # Check if the post exists and the current user has the right permissions
+
     if not post:
         flash('Post not found.', 'danger')
         return redirect(url_for('forum'))
-        
-    # Convert ObjectId to string for comparison with current_user.id
+
     post_user_id = str(post['user_id'])
     if post_user_id != current_user.id and not current_user.admin:
         flash('You do not have permission to edit this post.', 'danger')
@@ -907,41 +900,44 @@ def edit_post(post_id):
         description = request.form['description']
         customization_id = request.form.get('customization_id')
 
+        update_data = {
+            'title': title,
+            'description': description
+        }
+
         if customization_id:
             try:
+                # Ensure customization_id exists in the customization collection
+                customization = db.customization.find_one({'_id': ObjectId(customization_id)})
+                if customization is None:
+                    flash('Customization not found.', 'danger')
+                    return redirect(url_for('edit_post', post_id=post_id))
+
+                # If customization is found, add to update_data
                 update_data['customization_id'] = ObjectId(customization_id)
-            except:
+
+            except Exception as e:
+                print("Error converting customization_id:", e)  # Debugging
                 flash('Invalid customization selected.', 'danger')
                 return redirect(url_for('edit_post', post_id=post_id))
 
-        else:
-            # Update the post
-            update_data = {
-                'title': title,
-                'description': description
-            }
-            
-            # Only include customization_id if it was provided
-            if customization_id:
-                update_data['customization_id'] = ObjectId(customization_id)
-            
-            db.post.update_one(
-                {'_id': ObjectId(post_id)},
-                {'$set': update_data}
-            )
-            
-            flash('Post updated successfully.', 'success')
-            return redirect(url_for('forum'))
+        db.post.update_one(
+            {'_id': ObjectId(post_id)},
+            {'$set': update_data}
+        )
+        flash('Post updated successfully.', 'success')
+        return redirect(url_for('forum'))
 
     # Fetch customizations for the current user
     customizations = list(db.customization.find(
         {'user_id': ObjectId(current_user.id)},
         {'_id': 1, 'customization_name': 1}
     ))
-    
+
     return render_template('editpost.html', 
-                         post=post, 
-                         customizations=customizations)
+                           post=post, 
+                           customizations=customizations)
+
 
 @app.route('/post/<string:post_id>', methods=['GET'])
 def view_post(post_id):
