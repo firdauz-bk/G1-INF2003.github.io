@@ -39,24 +39,27 @@
 
             <!-- Filtering Form -->
             <form method="GET" action="{{ url_for('forum') }}" class="mb-4 d-flex">
+                                <!-- Brand Filter -->
                 <select name="brand" class="form-select me-2">
                     <option value="">Select Brand</option>
                     {% for brand in brands %}
-                        <option value="{{ brand['brand_id'] }}" {% if brand['brand_id'] == selected_brand_id %}selected{% endif %}>{{ brand['name'] }}</option>
+                        <option value="{{ brand['_id'] }}" {% if brand['_id'] == selected_brand_id %}selected{% endif %}>{{ brand['name'] }}</option>
                     {% endfor %}
                 </select>
 
+                <!-- Color Filter -->
                 <select name="color" class="form-select me-2">
                     <option value="">Select Color</option>
                     {% for color in colors %}
-                        <option value="{{ color['color_id'] }}" {% if color['color_id'] == selected_color_id %}selected{% endif %}>{{ color['name'] }}</option>
+                        <option value="{{ color['_id'] }}" {% if color['_id'] == selected_color_id %}selected{% endif %}>{{ color['name'] }}</option>
                     {% endfor %}
                 </select>
 
+                <!-- Wheel Set Filter -->
                 <select name="wheel" class="form-select me-2">
                     <option value="">Select Wheel Set</option>
                     {% for wheel in wheels %}
-                        <option value="{{ wheel['wheel_id'] }}" {% if wheel['wheel_id'] == selected_wheel_id %}selected{% endif %}>{{ wheel['name'] }}</option>
+                        <option value="{{ wheel['_id'] }}" {% if wheel['_id'] == selected_wheel_id %}selected{% endif %}>{{ wheel['name'] }}</option>
                     {% endfor %}
                 </select>
 

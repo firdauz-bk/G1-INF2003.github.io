@@ -1218,6 +1218,18 @@ def delete_comment(comment_id):
 
 @app.route('/forum')
 def forum():
+
+    brands = list(db['brand'].find())
+    colors = list(db['color'].find())
+    wheels = list(db['wheel_set'].find())
+
+    # Convert ObjectId to string for template rendering
+    for brand in brands:
+        brand['_id'] = str(brand['_id'])
+    for color in colors:
+        color['_id'] = str(color['_id'])
+    for wheel in wheels:
+        wheel['_id'] = str(wheel['_id'])
     # Get filter parameters from request args
     selected_brand_id = request.args.get('brand')
     selected_color_id = request.args.get('color')
@@ -1230,36 +1242,49 @@ def forum():
 
     # Build the query
     query = {}
+
+    # Collect filter conditions
+    conditions = []
+
     if selected_brand_id:
         selected_brand_id = ObjectId(selected_brand_id)
-        query['customization_id'] = {'$in': list(db['customization'].find(
-            {'model_id': {'$in': list(db['models'].find({'brand_id': selected_brand_id}, {'_id': 1}))}},
+        brand_customizations = [c['_id'] for c in db['customization'].find(
+            {'model_id': {'$in': [m['_id'] for m in db['model'].find({'brand_id': selected_brand_id}, {'_id': 1})]}},
             {'_id': 1}
-        ))}
+        )]
+        conditions.append({'customization_id': {'$in': brand_customizations}})
+
     if selected_color_id:
-        query['customization_id'] = {'$in': list(db['customization'].find(
+        conditions.append({'customization_id': {'$in': [c['_id'] for c in db['customization'].find(
             {'color_id': ObjectId(selected_color_id)},
             {'_id': 1}
-        ))}
+        )]}})
+
     if selected_wheel_id:
-        query['customization_id'] = {'$in': list(db['customization'].find(
+        conditions.append({'customization_id': {'$in': [c['_id'] for c in db['customization'].find(
             {'wheel_set_id': ObjectId(selected_wheel_id)},
             {'_id': 1}
-        ))}
+        )]}})
 
+    # Only add $and if conditions exist
+    if conditions:
+        query['$and'] = conditions
+
+    #print(f"Available customization: {list(db['customization'].find())}")
+    #print("Query for forum posts:", query)
     start_time = time.time()
 
-    posts = list(db['posts'].aggregate([
+    posts_pipeline = [
         {'$match': query},
         {'$lookup': {
-            'from': 'users',
+            'from': 'user',  # Corrected from 'users'
             'localField': 'user_id',
             'foreignField': '_id',
             'as': 'user'
         }},
         {'$unwind': '$user'},
         {'$lookup': {
-            'from': 'customizations',
+            'from': 'customization',  # Corrected from 'customizations'
             'localField': 'customization_id',
             'foreignField': '_id',
             'as': 'customization'
@@ -1279,74 +1304,67 @@ def forum():
             'customization_id': '$customization._id',
             'category': 1
         }}
-    ]))
+    ]
 
+    #print(f"Posts aggregation pipeline: {posts_pipeline}")
+
+
+    posts = list(db['post'].aggregate(posts_pipeline))
+
+    #print("Posts retrieved:", posts)
+
+    # Fetch comments for all posts in one query
+    post_ids = [post['post_id'] for post in posts]
+    comments_pipeline = [
+        {'$match': {'post_id': {'$in': post_ids}}},
+        {'$lookup': {
+            'from': 'user',
+            'localField': 'user_id',
+            'foreignField': '_id',
+            'as': 'user'
+        }},
+        {'$unwind': '$user'},
+        {'$sort': {'created_at': -1}},
+        {'$project': {
+            'comment_id': '$_id',
+            'content': 1,
+            'created_at': 1,
+            'user_id': 1,
+            'username': '$user.username',
+            'post_id': 1
+        }}
+    ]
+    comments = list(db['comment'].aggregate(comments_pipeline))
+    #print("Comments retrieved:", comments)
+    # Group comments by post_id
+    comments_by_post = {post_id: [] for post_id in post_ids}
+    for comment in comments:
+        comments_by_post[comment['post_id']].append(comment)
+
+    # Prepare posts with comments
     posts_with_comments = []
     for post in posts:
-        comments = list(db['comment'].aggregate([
-            {'$match': {'post_id': post['post_id']}},
-            {'$lookup': {
-                'from': 'users',
-                'localField': 'user_id',
-                'foreignField': '_id',
-                'as': 'user'
-            }},
-            {'$unwind': '$user'},
-            {'$sort': {'created_at': -1}},
-            {'$project': {
-                'comment_id': '$_id',
-                'content': 1,
-                'created_at': 1,
-                'user_id': 1,
-                'username': '$user.username'
-            }}
-        ]))
-
-        customization_data = None
+        # Ensure customization_data is populated or set to an empty dict if not available
+        customization_data = {}
         if post.get('customization_id'):
-            customization_data = db['customization'].aggregate([
-                {'$match': {'_id': post['customization_id']}},
-                {'$lookup': {
-                    'from': 'models',
-                    'localField': 'model_id',
-                    'foreignField': '_id',
-                    'as': 'model'
-                }},
-                {'$unwind': '$model'},
-                {'$lookup': {
-                    'from': 'brands',
-                    'localField': 'model.brand_id',
-                    'foreignField': '_id',
-                    'as': 'brand'
-                }},
-                {'$unwind': '$brand'},
-                {'$lookup': {
-                    'from': 'colors',
-                    'localField': 'color_id',
-                    'foreignField': '_id',
-                    'as': 'color'
-                }},
-                {'$unwind': '$color'},
-                {'$lookup': {
-                    'from': 'wheel_sets',
-                    'localField': 'wheel_set_id',
-                    'foreignField': '_id',
-                    'as': 'wheel_set'
-                }},
-                {'$unwind': '$wheel_set'},
-                {'$project': {
-                    'brand_name': '$brand.name',
-                    'model_name': '$model.name',
-                    'color_name': '$color.name',
-                    'wheel_name': '$wheel_set.name'
-                }}
-            ]).next()
-
+            customization = db['customization'].find_one({'_id': post['customization_id']})
+            if customization:
+                model = db['model'].find_one({'_id': customization['model_id']})
+                brand = db['brand'].find_one({'_id': model['brand_id']}) if model else None
+                color = db['color'].find_one({'_id': customization['color_id']})
+                wheel = db['wheel_set'].find_one({'_id': customization['wheel_set_id']})
+                customization_data = {
+                    'brand_name': brand['name'] if brand else 'unknown',
+                    'model_name': model['name'] if model else 'unknown',
+                    'color_name': color['name'] if color else 'unknown',
+                    'wheel_name': wheel['name'] if wheel else 'unknown'
+                }
         posts_with_comments.append({
             'post': post,
-            'comments': comments,
+            'comment': comments_by_post.get(post['post_id'], []),
             'customization_data': customization_data
         })
+
 
     total_posts = db['post'].count_documents(query)
     total_pages = (total_posts + per_page - 1) // per_page
