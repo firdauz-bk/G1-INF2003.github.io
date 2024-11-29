@@ -1,31 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}Models{% endblock %}
+{% block title %}Create Model{% endblock %}
 
 {% block content %}
-<h1>Models</h1>
+<h1>Create New Model</h1>
 
-<a href="{{ url_for('create_model') }}">Create New Model</a>
+<form method="POST" action="{{ url_for('create_model') }}">
+    <div>
+        <label for="model_name">Model Name:</label>
+        <input type="text" id="model_name" name="model_name" required>
+    </div>
 
-<table>
-    <tr>
-        <th>Model Name</th>
-        <th>Brand</th>
-        <th>Vehicle Type</th>
-        <th>Actions</th>
-    </tr>
-    {% for model in models %}
-    <tr>
-        <td>{{ model['model_name'] }}</td>
-        <td>{{ model['brand_name'] }}</td>
-        <td>{{ model['type_name'] }}</td>
-        <td>
-            <a href="{{ url_for('edit_model', model_id=model['model_id']) }}">Edit</a>
-            <form action="{{ url_for('delete_model', model_id=model['model_id']) }}" method="POST" style="display:inline;">
-                <button type="submit" onclick="return confirm('Are you sure?')">Delete</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+    <div>
+        <label for="brand_id">Brand:</label>
+        <select id="brand_id" name="brand_id" required>
+            <option value="">Select a Brand</option>
+            {% for brand in brands %}
+            <option value="{{ brand._id }}">{{ brand.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label for="type_id">Vehicle Type:</label>
+        <select id="type_id" name="type_id" required>
+            <option value="">Select a Vehicle Type</option>
+            {% for vt in vehicle_types %}
+            <option value="{{ vt._id }}">{{ vt.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <button type="submit">Create Model</button>
+</form>
 {% endblock %}

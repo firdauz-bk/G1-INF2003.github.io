@@ -417,6 +417,7 @@ def admin():
                 'type_name': '$vehicle_type.name'
             }
         },
+        
         {
             '$sort': {'model_name': 1}
         }
@@ -428,102 +429,129 @@ def admin():
     return render_template('admin.html', users=users, vehicle_types=vehicle_types,
                          brands=brands, models=models, colors=colors, wheel_sets=wheel_sets)
 
-@app.route('/create_color', methods=['GET', 'POST'])
+@app.route('/create_color', methods=["GET", "POST"])
 @login_required
 def create_color():
-    if request.method == 'POST':
-        name = request.form['name']
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
 
+    if request.method == "POST":
+        name = request.form.get('name', '').strip()
         if not name:
-            flash('Color name is required.', 'danger')
-        else:
-            # Check if the color already exists
-            if db['colors'].find_one({'name': name}):
-                flash('Color name already exists.', 'danger')
-            else:
-                # Insert the new color into the database
-                db['colors'].insert_one({'name': name})
-                flash('Color created successfully.', 'success')
-                return redirect(url_for('admin'))
+            flash("Color name cannot be empty!")
+            return redirect(url_for('create_color'))
 
-    return render_template('create_color.html')
+        try:
+            # Insert into the `color` collection
+            db.color.insert_one({"name": name})
+            flash("Color created successfully!")
+        except Exception as e:
+            flash(f"Error creating color: {str(e)}")
 
-@app.route('/edit_color/<string:color_id>', methods=['GET', 'POST'])
+        return redirect(url_for('admin') + "#colors")
+
+    return render_template("create_color.html")
+
+
+@app.route('/edit_color/<color_id>', methods=["GET", "POST"])
 @login_required
 def edit_color(color_id):
-    # Find the color in the database
-    color = db['colors'].find_one({'_id': ObjectId(color_id)})
-
-    if not color:
-        flash('Color not found.', 'danger')
-        return redirect(url_for('admin'))
-
-    if request.method == 'POST':
-        name = request.form['name']
-
-        if not name:
-            flash('Color name is required.', 'danger')
-        else:
-            # Update the color name in the database
-            db['colors'].update_one({'_id': ObjectId(color_id)}, {'$set': {'name': name}})
-            flash('Color updated successfully.', 'success')
-            return redirect(url_for('admin'))
-
-    return render_template('edit_color.html', color=color)
-
-@app.route('/delete_color/<string:color_id>', methods=['POST'])
-@login_required
-def delete_color(color_id):
     if not current_user.admin:
-        flash('You do not have permission to delete colors.', 'danger')
-        return redirect(url_for('admin'))
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
 
-    # Find the color in the database
-    color = db['colors'].find_one({'_id': ObjectId(color_id)})
+    try:
+        # Retrieve the color document for GET requests
+        color = db.color.find_one({"_id": ObjectId(color_id)})
+        if not color:
+            flash("Color not found!")
+            return redirect(url_for('admin') + "#colors")
 
-    if not color:
-        flash('Color not found.', 'danger')
-        return redirect(url_for('admin'))
+        if request.method == "POST":
+            name = request.form.get('name', '').strip()
+            if not name:
+                flash("Color name cannot be empty!")
+                return redirect(url_for('edit_color', color_id=color_id))
 
-    # Delete the color from the database
-    db['colors'].delete_one({'_id': ObjectId(color_id)})
+            # Update the color in the database
+            db.color.update_one(
+                {"_id": ObjectId(color_id)},
+                {"$set": {"name": name}}
+            )
+            flash("Color updated successfully!")
+            return redirect(url_for('admin') + "#colors")
 
-    flash('Color deleted successfully.', 'success')
-    return redirect(url_for('admin'))
+        # Pass color data to the template
+        color["_id"] = str(color["_id"])  # Convert ObjectId to string for Jinja2
+    except Exception as e:
+        flash(f"Error updating color: {str(e)}")
+        return redirect(url_for('admin') + "#colors")
 
-@app.route('/brand_type', methods=["GET", 'POST'])
+    return render_template("edit_color.html", color=color)
+
+
+@app.route('/delete_color', methods=["POST"])
+@login_required
+def delete_color():
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+
+    color_id = request.form.get('color_id')
+    if not color_id:
+        flash("Color ID not provided!")
+        return redirect(url_for('admin') + "#colors")
+
+    try:
+        result = db.color.delete_one({"_id": ObjectId(color_id)})
+        if result.deleted_count > 0:
+            flash("Color deleted successfully!")
+        else:
+            flash("Color not found!")
+    except Exception as e:
+        flash(f"Error deleting color: {str(e)}")
+
+    return redirect(url_for('admin') + "#colors")
+
+
+@app.route('/brand_type', methods=["GET", "POST"])
 @login_required
 def brand_type():
     if not current_user.admin:
         flash('Access denied. Admin privileges required.')
         return redirect(url_for('home'))
+    
     if request.method == 'POST':
-        name = request.form['name']
-        # Check if the name already exists in the collection
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash("Brand name cannot be empty!")
+            return redirect(url_for('brand_type'))
+
+        # Check if the brand already exists
         existing_brand = db.brand.find_one({"name": name})
         if existing_brand:
-            flash("Name already exists!")
+            flash("Brand already exists!")
             return redirect(url_for('brand_type'))
-            
-        # If not, insert the new brand
+
+        # Add the new brand
         try:
             db.brand.insert_one({"name": name})
             flash("Brand added successfully!")
         except Exception as e:
             flash(f"Error adding brand: {str(e)}")
+
         return redirect(url_for('brand_type'))
     
-    # Retrieve all brands
+    # Fetch all brands and convert `_id` to string for Jinja2
     try:
-        brands = list(db.brand.find())
-        # Convert ObjectId to string for template rendering
-        for brand in brands:
-            brand['_id'] = str(brand['_id'])
+        brands = [{"_id": str(brand["_id"]), "name": brand["name"]} for brand in db.brand.find()]
     except Exception as e:
         flash(f"Error retrieving brands: {str(e)}")
         brands = []
-        
+
     return render_template('brand_type.html', brands=brands)
+
 
 @app.route('/brand_type/edit/<brand_id>', methods=["GET", 'POST'])
 @login_required
@@ -652,30 +680,47 @@ def vehicle_type_edit(type_id):
             
     return redirect(url_for('vehicle_type'))
 
-@app.route('/vehicle_type/delete/<type_id>', methods=["GET", 'POST'])
+from flask import request
+
+@app.route('/vehicle_type/delete', methods=["POST"])
 @login_required
-def vehicle_type_delete(type_id):
+def vehicle_type_delete():
     if not current_user.admin:
         flash('Access denied. Admin privileges required.')
         return redirect(url_for('home'))
-    
+
+    type_id = request.form.get('type_id')
+    if not type_id:
+        flash("Vehicle Type ID not provided!")
+        return redirect(url_for('vehicle_type'))
+
     try:
-        # Check if this vehicle type is referenced by any models
-        model_count = db.model.count_documents({"type_id": ObjectId(type_id)})
+        object_type_id = ObjectId(type_id)
+
+        # Check for references in models
+        model_count = db.model.count_documents({"type_id": object_type_id})
         if model_count > 0:
-            flash('Cannot delete vehicle type: it is being used by existing models!')
-            return redirect(url_for('admin') + '#vehicle_types')
-        
+            flash('Cannot delete vehicle type: it is referenced by existing models!')
+            return redirect(url_for('vehicle_type'))
+
         # Delete the vehicle type
-        result = db.vehicle_type.delete_one({"_id": ObjectId(type_id)})
+        result = db.vehicle_type.delete_one({"_id": object_type_id})
         if result.deleted_count > 0:
             flash('Vehicle type deleted successfully!')
         else:
             flash('Vehicle type not found!')
+
     except Exception as e:
         flash(f"Error deleting vehicle type: {str(e)}")
-        
-    return redirect(url_for('admin') + '#vehicle_types')
+
+    # Check if the request originated from the admin page or another page
+    referrer = request.referrer or url_for('admin')
+    if 'admin' in referrer:
+        return redirect(url_for('admin') + '#vehicle_types')
+    else:
+        return redirect(url_for('vehicle_type'))
+
+
 
 @app.route('/admin/update_user/<user_id>', methods=['GET', 'POST'])
 @login_required
@@ -1394,71 +1439,107 @@ def search():
                            comments=comments, page=page, total_pages=(total_posts + per_page - 1) // per_page,
                            search_time=search_time)
 
-@app.route('/create_model', methods=['GET', 'POST'])
+@app.route('/model/create', methods=["GET", "POST"])
 @login_required
 def create_model():
-    if request.method == 'POST':
-        name = request.form['name']
-        brand_id = request.form['brand_id']
-        type_id = request.form['type_id']
-        
-        # Validation
-        if not name or not brand_id or not type_id:
-            flash('All fields are required.')
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+
+    if request.method == "POST":
+        model_name = request.form.get('model_name', '').strip()
+        brand_id = request.form.get('brand_id')
+        type_id = request.form.get('type_id')
+
+        if not model_name or not brand_id or not type_id:
+            flash("All fields are required!")
             return redirect(url_for('create_model'))
 
-        # Insert the model into MongoDB
-        db['model'].insert_one({
-            'name': name,
-            'brand_id': ObjectId(brand_id),  # Convert to ObjectId
-            'type_id': ObjectId(type_id)    # Convert to ObjectId
-        })
+        try:
+            # Convert type_id and brand_id to ObjectId
+            object_brand_id = ObjectId(brand_id)
+            object_type_id = ObjectId(type_id)
 
-        flash('Model added successfully!')
-        return redirect(url_for('models'))
-    
-    # Fetch brands and vehicle types for dropdowns
-    brands = list(db['brand'].find({}, {'_id': 1, 'name': 1}))
-    vehicle_types = list(db['vehicle_types'].find({}, {'_id': 1, 'name': 1}))
+            # Insert the model into the database
+            db.model.insert_one({
+                "model_name": model_name,
+                "brand_id": object_brand_id,
+                "type_id": object_type_id
+            })
 
-    return render_template('create_model.html', brands=brands, vehicle_types=vehicle_types)
+            flash("Model created successfully!")
+            return redirect(url_for('admin') + "#models")
 
-@app.route('/edit_model/<string:model_id>', methods=['GET', 'POST'])
+        except Exception as e:
+            flash(f"Error creating model: {str(e)}")
+            return redirect(url_for('create_model'))
+
+    # Fetch brands and vehicle types for the form
+    try:
+        brands = [{"_id": str(brand["_id"]), "name": brand["name"]} for brand in db.brand.find()]
+        vehicle_types = [{"_id": str(vt["_id"]), "name": vt["name"]} for vt in db.vehicle_type.find()]
+    except Exception as e:
+        flash(f"Error retrieving data: {str(e)}")
+        brands = []
+        vehicle_types = []
+
+    return render_template('model.html', brands=brands, vehicle_types=vehicle_types)
+
+
+@app.route('/edit_model/<model_id>', methods=["GET", "POST"])
 @login_required
 def edit_model(model_id):
-    # Fetch the model by ID
-    model = db['model'].find_one({'_id': ObjectId(model_id)})
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
 
-    if not model:
-        flash('Model not found.')
-        return redirect(url_for('models'))
-    
-    if request.method == 'POST':
-        name = request.form['name']
-        brand_id = request.form['brand_id']
-        type_id = request.form['type_id']
-        
-        # Validation
-        if not name or not brand_id or not type_id:
-            flash('All fields are required.')
-        else:
-            # Update the model in MongoDB
-            db['model'].update_one(
-                {'_id': ObjectId(model_id)},
-                {'$set': {
-                    'name': name,
-                    'brand_id': ObjectId(brand_id),  # Convert to ObjectId
-                    'type_id': ObjectId(type_id)    # Convert to ObjectId
+    try:
+        # Fetch the model details from the database
+        model = db.model.find_one({"_id": ObjectId(model_id)})
+        if not model:
+            flash("Model not found!")
+            return redirect(url_for('admin') + "#models")
+
+        # Fetch brands and vehicle types for dropdowns
+        brands = [{"_id": str(brand["_id"]), "name": brand["name"]} for brand in db.brand.find()]
+        vehicle_types = [{"_id": str(vt["_id"]), "name": vt["name"]} for vt in db.vehicle_type.find()]
+
+        if request.method == "POST":
+            model_name = request.form.get('model_name', '').strip()
+            brand_id = request.form.get('brand_id')
+            type_id = request.form.get('type_id')
+
+            if not model_name or not brand_id or not type_id:
+                flash("All fields are required!")
+                return redirect(url_for('edit_model', model_id=model_id))
+
+            # Update the model in the database
+            db.model.update_one(
+                {"_id": ObjectId(model_id)},
+                {"$set": {
+                    "model_name": model_name,
+                    "brand_id": ObjectId(brand_id),
+                    "type_id": ObjectId(type_id)
                 }}
             )
-            flash('Model updated successfully!')
-            return redirect(url_for('models'))
+            flash("Model updated successfully!")
+            return redirect(url_for('admin') + "#models")
 
-    # Fetch brands and vehicle types for dropdowns
-    brands = list(db['brand'].find({}, {'_id': 1, 'name': 1}))
-    vehicle_types = list(db['vehicle_types'].find({}, {'_id': 1, 'name': 1}))
+        # Convert ObjectId fields for the template
+        model["_id"] = str(model["_id"])
+        model["brand_id"] = str(model["brand_id"])
+        model["type_id"] = str(model["type_id"])
 
-    return render_template('edit_model.html', model=model, brands=brands, vehicle_types=vehicle_types)
+    except Exception as e:
+        flash(f"Error loading model: {str(e)}")
+        return redirect(url_for('admin') + "#models")
+
+    return render_template(
+        'edit_model.html',
+        model=model,
+        brands=brands,
+        vehicle_types=vehicle_types
+    )
 
 @app.route('/delete_model/<string:model_id>', methods=['POST'])
 @login_required
@@ -1494,123 +1575,94 @@ def get_models(brand_id):
         print(f"Error fetching models for brand_id {brand_id}: {e}")
         return jsonify({'error': 'Failed to fetch models'}), 500
 
-@app.route('/create_wheel_set', methods=['GET', 'POST'])
+@app.route('/create_wheel_set', methods=["GET", "POST"])
 @login_required
 def create_wheel_set():
-    if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        
-        if not name:
-            flash('Wheel Set Name is required', 'danger')
-        else:
-            try:
-                wheel_sets = db.wheel_set
-                
-                # Check if wheel set with same name already exists
-                existing_wheel_set = wheel_sets.find_one({'name': name})
-                if existing_wheel_set:
-                    flash('A wheel set with this name already exists.', 'danger')
-                    return render_template('create_wheel_set.html')
-                
-                # Insert new wheel set
-                new_wheel_set = {
-                    'name': name,
-                    'description': description
-                }
-                result = wheel_sets.insert_one(new_wheel_set)
-                
-                if result.inserted_id:
-                    flash('Wheel Set created successfully.', 'success')
-                    return redirect(url_for('admin'))
-                else:
-                    flash('Failed to create wheel set.', 'danger')
-            except Exception as e:
-                flash(f'An error occurred: {str(e)}', 'danger')
-                
-    return render_template('create_wheel_set.html')
-
-@app.route('/edit_wheel_set/<wheel_id>', methods=['GET', 'POST'])
-@login_required
-def edit_wheel_set(wheel_id):
-    try:
-        wheel_sets = db.wheel_set
-        
-        # Convert string ID to MongoDB ObjectId
-        wheel_set = wheel_sets.find_one({'_id': ObjectId(wheel_id)})
-        
-        if not wheel_set:
-            flash('Wheel set not found.', 'danger')
-            return redirect(url_for('admin'))
-        
-        if request.method == 'POST':
-            name = request.form['name']
-            description = request.form['description']
-            
-            if not name:
-                flash('Wheel set name is required.', 'danger')
-            else:
-                # Check if another wheel set has the same name (excluding current one)
-                existing_wheel_set = wheel_sets.find_one({
-                    '_id': {'$ne': ObjectId(wheel_id)},
-                    'name': name
-                })
-                
-                if existing_wheel_set:
-                    flash('A wheel set with this name already exists.', 'danger')
-                    return render_template('edit_wheel_set.html', wheel_set=wheel_set)
-                
-                # Update the wheel set
-                result = wheel_sets.update_one(
-                    {'_id': ObjectId(wheel_id)},
-                    {'$set': {
-                        'name': name,
-                        'description': description
-                    }}
-                )
-                
-                if result.modified_count > 0:
-                    flash('Wheel set updated successfully.', 'success')
-                    return redirect(url_for('admin'))
-                else:
-                    flash('No changes made to the wheel set.', 'info')
-                    
-        return render_template('edit_wheel_set.html', wheel_set=wheel_set)
-        
-    except Exception as e:
-        flash(f'An error occurred: {str(e)}', 'danger')
-        return redirect(url_for('admin'))
-
-@app.route('/delete_wheel_set/<wheel_id>', methods=['POST'])
-@login_required
-def delete_wheel_set(wheel_id):
     if not current_user.admin:
         flash('Access denied. Admin privileges required.')
-        return redirect(url_for('admin'))
-    
+        return redirect(url_for('home'))
+
+    if request.method == "POST":
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+
+        if not name:
+            flash("Wheel set name cannot be empty!")
+            return redirect(url_for('create_wheel_set'))
+
+        try:
+            db.wheel_set.insert_one({"name": name, "description": description})
+            flash("Wheel set created successfully!")
+        except Exception as e:
+            flash(f"Error creating wheel set: {str(e)}")
+
+        return redirect(url_for('admin') + "#wheel_sets")
+
+    return render_template("create_wheel_set.html")
+
+
+@app.route('/edit_wheel_set/<wheel_id>', methods=["GET", "POST"])
+@login_required
+def edit_wheel_set(wheel_id):
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+
     try:
-        wheel_sets = db.wheel_set
-        
-        # Check if wheel set is being used in any customizations
-        customizations = db.customization
-        in_use = customizations.find_one({'wheel_set_id': ObjectId(wheel_id)})
-        
-        if in_use:
-            flash('Cannot delete wheel set as it is being used in existing customizations.', 'danger')
-            return redirect(url_for('admin') + '#wheel_sets')
-        
-        # Delete the wheel set
-        result = wheel_sets.delete_one({'_id': ObjectId(wheel_id)})
-        
-        if result.deleted_count > 0:
-            flash('Wheel set deleted successfully.', 'success')
-        else:
-            flash('Wheel set not found.', 'danger')
-            
+        # Retrieve the wheel set for GET requests
+        wheel_set = db.wheel_set.find_one({"_id": ObjectId(wheel_id)})
+        if not wheel_set:
+            flash("Wheel set not found!")
+            return redirect(url_for('admin') + "#wheel_sets")
+
+        if request.method == "POST":
+            # Get updated values from the form
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+
+            if not name:
+                flash("Wheel set name cannot be empty!")
+                return redirect(url_for('edit_wheel_set', wheel_id=wheel_id))
+
+            # Update the wheel set in the database
+            db.wheel_set.update_one(
+                {"_id": ObjectId(wheel_id)},
+                {"$set": {"name": name, "description": description}}
+            )
+            flash("Wheel set updated successfully!")
+            return redirect(url_for('admin') + "#wheel_sets")
+
+        # Pass the wheel set data to the template
+        wheel_set["_id"] = str(wheel_set["_id"])
     except Exception as e:
-        flash(f'An error occurred: {str(e)}', 'danger')
-        
-    return redirect(url_for('admin') + '#wheel_sets')
+        flash(f"Error loading wheel set: {str(e)}")
+        return redirect(url_for('admin') + "#wheel_sets")
+
+    return render_template("edit_wheel_set.html", wheel_set=wheel_set)
+
+
+@app.route('/delete_wheel_set', methods=["POST"])
+@login_required
+def delete_wheel_set():
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+
+    wheel_id = request.form.get('wheel_id')
+    if not wheel_id:
+        flash("Wheel ID not provided!")
+        return redirect(url_for('admin') + "#wheel_sets")
+
+    try:
+        result = db.wheel_set.delete_one({"_id": ObjectId(wheel_id)})
+        if result.deleted_count > 0:
+            flash("Wheel set deleted successfully!")
+        else:
+            flash("Wheel set not found!")
+    except Exception as e:
+        flash(f"Error deleting wheel set: {str(e)}")
+
+    return redirect(url_for('admin') + "#wheel_sets")
 
 
 if __name__ == '__main__':

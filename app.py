@@ -1059,7 +1059,7 @@ def vehicle_type_delete(type_id):
     flash('Vehicle type deleted successfully!')
     return redirect(url_for('admin') + '#vehicle_types')
 
-@app.route('/brand_type', methods=["GET", 'POST'])
+@app.route('/brand_type', methods=["GET", "POST"])
 @login_required
 def brand_type():
     if not current_user.admin:
@@ -1067,25 +1067,35 @@ def brand_type():
         return redirect(url_for('home'))
     
     if request.method == 'POST':
-        name = request.form['name']
-        conn = get_db_connection()
+        name = request.form.get('name', '').strip()  # Safely handle form input
+        if not name:
+            flash("Brand name cannot be empty!")
+            return redirect(url_for('brand_type'))
 
-        # Check if the name already exists in the table
-        result = conn.execute('SELECT COUNT(1) FROM brand WHERE name = ?', (name,)).fetchone()
-        if result[0] > 0:
+        # Check if the name already exists in the collection
+        existing_brand = db.brand.find_one({"name": name})
+        if existing_brand:
             flash("Name already exists!")
-            return redirect(url_for('brand_type')) 
+            return redirect(url_for('brand_type'))
 
-        # If not, add it to the 
-        conn.execute('INSERT INTO brand (name) VALUES (?)', (name, ))
-        conn.commit()
-        conn.close()
-
+        # Insert the new brand
+        try:
+            db.brand.insert_one({"name": name})
+            flash("Brand added successfully!")
+        except Exception as e:
+            flash(f"Error adding brand: {str(e)}")
         return redirect(url_for('brand_type'))
     
-    # Retrieve all comments related to the post
-    conn = get_db_connection()
-    brands = conn.execute('SELECT * FROM brand').fetchall()
+    # Retrieve all brands
+    try:
+        brands = list(db.brand.find())
+        # Convert ObjectId to string for template rendering
+        for brand in brands:
+            brand['_id'] = str(brand['_id'])  # Convert ObjectId to string
+    except Exception as e:
+        flash(f"Error retrieving brands: {str(e)}")
+        brands = []
+    
     return render_template('brand_type.html', brands=brands)
 
 @app.route('/brand_type/edit/<int:brand_id>', methods=["GET", 'POST'])
