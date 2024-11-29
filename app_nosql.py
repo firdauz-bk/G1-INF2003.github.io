@@ -339,7 +339,7 @@ def edit_customization(customization_id):
 
     return render_template(
         'edit_customization.html',
-        customizations=customization,
+        customization=customization,
         brands=brands,
         colors=colors,
         wheels=wheels,

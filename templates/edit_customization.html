@@ -4,8 +4,7 @@
 <h1 class="text-center">Edit Customization</h1>
 
 <div class="container">
-    <form id="edit-customization-form" method="POST" action="{{ url_for('edit_customization', customization_id=customization['_id']) }}"
-    class="mb-5">
+    <form id="edit-customization-form" method="POST" action="{{ url_for('edit_customization', customization_id=customization['_id']) }}" class="mb-5">
         <div class="form-group">
             <label for="customization_name">Customization Name</label>
             <input type="text" id="customization_name" name="customization_name" class="form-control" 
@@ -81,42 +80,63 @@
     }
 </style>
 <script>
+    // Add event listener to Preview button to update the preview when clicked
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('preview-button').addEventListener('click', updatePreview);
 
-        function updatePreview() {
-            const brand = $('#brand_id option:selected').text().toLowerCase().replace(/ /g, '_');
-            const model = $('#model_id option:selected').text().toLowerCase().replace(/ /g, '_');
-            const color = $('#color_id option:selected').text().toLowerCase().replace(/ /g, '_');
-            const wheel = $('#wheel_id option:selected').text().toLowerCase().replace(/ /g, '_');
+        // Add event listener for preview buttons for saved customizations
+        document.querySelectorAll('.preview-saved').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const brand = button.getAttribute('data-brand').toLowerCase().replace(/ /g, '_');
+                const model = button.getAttribute('data-model').toLowerCase().replace(/ /g, '_');
+                const color = button.getAttribute('data-color').toLowerCase().replace(/ /g, '_');
+                const wheel = button.getAttribute('data-wheel').toLowerCase().replace(/ /g, '_');
 
-            if (brand && model && color && wheel) {
-                loadCarImages(brand, model, color, wheel);
-            }
-        }
-
-        function loadCarImages(brand, model, color, wheel) {
-            const images = [];
-            for (let i = 1; i <= 19; i++) {
-                images.push(`/static/images/cars/${brand}/${model}/${color}/${wheel}/${i}.webp`);
-            }
-
-            if (images.length > 0) {
-                $("#car-viewer").spritespin({
-                    source: images,
-                    width: 700,
-                    height: 400,
-                    sense: -1,
-                    frameTime: 60,
-                    loop: false,
-                    animate: false,
-                    plugins: [
-                        'drag',
-                        '360'
-                    ]
-                });
-            }
-        }
+                updateSavedCustomizationPreview(brand, model, color, wheel);
+            });
+        });
     });
+
+    function updatePreview() {
+        // Collect selected values
+        const brand = $('#brand option:selected').text().toLowerCase().replace(/ /g, '_');
+        const model = $('#model option:selected').text().toLowerCase().replace(/ /g, '_');
+        const color = $('#color option:selected').text().toLowerCase().replace(/ /g, '_');
+        const wheel = $('#wheel option:selected').text().toLowerCase().replace(/ /g, '_');
+
+        // Ensure all selections are made before showing the preview
+        if (brand && model && color && wheel) {
+            loadCarImages(brand, model, color, wheel);
+        }
+    }
+
+    function updateSavedCustomizationPreview(brand, model, color, wheel) {
+        // Load car images for the saved customization
+        loadCarImages(brand, model, color, wheel);
+    }
+
+    function loadCarImages(brand, model, color, wheel) {
+        const images = [];
+        for (let i = 1; i <= 19; i++) {
+            images.push(`/static/images/cars/${brand}/${model}/${color}/${wheel}/${i}.webp`);
+        }
+
+        // Initialize or update SpriteSpin
+        if (images.length > 0) {
+            $("#car-viewer").spritespin({
+                source: images,
+                width: 700,  // Set the desired width of the viewer
+                height: 400, // Set the desired height of the viewer
+                sense: -1,   // Change this value to reverse rotation direction
+                frameTime: 60,
+                loop: false,
+                animate: false,
+                plugins: [
+                    'drag',    // Allow dragging to rotate
+                    '360'      // Enables 360 degree mode
+                ]
+            });
+        }
+    }
 </script>
 {% endblock %}
