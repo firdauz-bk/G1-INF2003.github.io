@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>Edit Comment</h1>
-<form method="POST" action="{{ url_for('edit_comment', comment_id=comment['comment_id']) }}">
+<form method="POST" action="{{ url_for('edit_comment', comment_id=comment['_id']) }}">
     <textarea name="content">{{ comment['content'] }}</textarea>
     <br>
     <button type="submit">Update Comment</button>
