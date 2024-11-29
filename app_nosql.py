@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, current_app, g
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -616,28 +616,31 @@ def create_savepoint():
         return jsonify({'success': False, 'error': 'Access denied'})
     
     try:
-        with db.client.start_session() as session:
-            with session.start_transaction():
-                # Get current users
-                current_users = list(db.users.find({}, session=session))
-                
-                # Create savepoint document
-                savepoint = {
-                    'timestamp': datetime(),
-                    'created_by': current_user.id,
-                    'users_state': current_users
-                }
-                
-                # Store the savepoint
-                db.users_savepoints.insert_one(savepoint, session=session)
-                
-                # Keep only the last 5 savepoints
-                old_savepoints = db.users_savepoints.find().sort('timestamp', -1).skip(5)
-                for old_sp in old_savepoints:
-                    db.users_savepoints.delete_one({'_id': old_sp['_id']})
-                
-                return jsonify({'success': True})
+        # Get current users and convert ObjectId to string for serialization
+        current_users = []
+        for user in db.users.find({}):
+            user['_id'] = str(user['_id'])  # Convert ObjectId to string
+            current_users.append(user)
+        
+        # Create savepoint document
+        savepoint = {
+            'timestamp': datetime.utcnow(),
+            'created_by': str(current_user.id),  # Convert ObjectId to string
+            'users_state': current_users
+        }
+        
+        # Store the savepoint
+        result = db.users_savepoints.insert_one(savepoint)
+        
+        # Keep only the last 5 savepoints
+        savepoints = list(db.users_savepoints.find().sort('timestamp', -1))
+        if len(savepoints) > 5:
+            for old_sp in savepoints[5:]:
+                db.users_savepoints.delete_one({'_id': old_sp['_id']})
+        
+        return jsonify({'success': True})
     except Exception as e:
+        print(f"Savepoint error: {str(e)}")  # For debugging
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/rollback_to_savepoint', methods=['POST'])
@@ -647,26 +650,37 @@ def rollback_to_savepoint():
         return jsonify({'success': False, 'error': 'Access denied'})
     
     try:
-        with db.client.start_session() as session:
-            with session.start_transaction():
-                # Get the most recent savepoint
-                latest_savepoint = db.users_savepoints.find_one(
-                    sort=[('timestamp', -1)]
-                )
-                
-                if not latest_savepoint:
-                    return jsonify({'success': False, 'error': 'No savepoint found'})
-                
-                # Delete all current users
-                db.users.delete_many({}, session=session)
-                
-                # Restore users from savepoint
-                users_to_restore = latest_savepoint['users_state']
-                if users_to_restore:
-                    db.users.insert_many(users_to_restore, session=session)
-                
-                return jsonify({'success': True})
+        # Get the most recent savepoint
+        latest_savepoint = db.users_savepoints.find_one(
+            sort=[('timestamp', -1)]
+        )
+        
+        if not latest_savepoint:
+            return jsonify({'success': False, 'error': 'No savepoint found'})
+        
+        # Get current admin user info to preserve it
+        current_admin = db.users.find_one({'_id': current_user.id})
+        
+        # Delete all current users except the current admin
+        db.users.delete_many({'_id': {'$ne': current_user.id}})
+        
+        # Restore users from savepoint
+        users_to_restore = latest_savepoint['users_state']
+        if users_to_restore:
+            for user in users_to_restore:
+                # Convert string ID back to ObjectId
+                user_id = user.pop('_id')
+                # Skip if this is the current admin user
+                if user_id != str(current_user.id):
+                    try:
+                        db.users.insert_one(user)
+                    except Exception as e:
+                        print(f"Error restoring user: {str(e)}")  # For debugging
+                        continue
+        
+        return jsonify({'success': True})
     except Exception as e:
+        print(f"Rollback error: {str(e)}")  # For debugging
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/create_color', methods=["GET", "POST"])

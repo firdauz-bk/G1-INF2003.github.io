@@ -267,14 +267,20 @@ function savepoint() {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'same-origin'  // Include credentials
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 alert('Savepoint created successfully!');
             } else {
-                alert('Error creating savepoint: ' + data.error);
+                alert('Error creating savepoint: ' + (data.error || 'Unknown error'));
+                console.error('Savepoint error:', data.error);
             }
+        })
+        .catch(error => {
+            console.error('Savepoint error:', error);
+            alert('Error creating savepoint: ' + error);
         });
     }
 }
@@ -286,6 +292,7 @@ function rollback() {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'same-origin'  // Include credentials
         })
         .then(response => response.json())
         .then(data => {
@@ -293,8 +300,13 @@ function rollback() {
                 alert('Rollback successful!');
                 window.location.reload();
             } else {
-                alert('Error rolling back: ' + data.error);
+                alert('Error rolling back: ' + (data.error || 'Unknown error'));
+                console.error('Rollback error:', data.error);
             }
+        })
+        .catch(error => {
+            console.error('Rollback error:', error);
+            alert('Error rolling back: ' + error);
         });
     }
 }
