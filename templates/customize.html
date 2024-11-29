@@ -12,37 +12,37 @@
 
         <div class="form-group">
             <label for="brand_id">Brand:</label>
-            <select name="brand_id" id="brand_id" class="form-control" required>
+            <select name="brand" id="brand" class="form-control" required>
                 <option value="" disabled selected>Select a brand</option>
                 {% for brand in brands %}
-                    <option value="{{ brand.brand_id }}">{{ brand.name }}</option>
+                    <option value="{{ brand._id }}">{{ brand.name }}</option>
                 {% endfor %}
             </select>
         </div>
 
         <div class="form-group">
             <label for="model_id">Model:</label>
-            <select name="model_id" id="model_id" class="form-control" required>
+            <select id="model" name="model" class="form-control">
                 <option value="" disabled selected>Select a model</option>
             </select>
         </div>
 
         <div class="form-group">
             <label for="color_id">Color:</label>
-            <select name="color_id" id="color_id" class="form-control">
+            <select name="color" id="color" class="form-control">
                 <option value="" disabled selected>Select a color</option>
                 {% for color in colors %}
-                    <option value="{{ color.color_id }}">{{ color.name }}</option>
+                    <option value="{{ color._id }}">{{ color.name }}</option>
                 {% endfor %}
             </select>
         </div>
 
         <div class="form-group">
             <label for="wheel_id">Wheel Set:</label>
-            <select name="wheel_id" id="wheel_id" class="form-control">
+            <select name="wheel" id="wheel" class="form-control">
                 <option value="" disabled selected>Select a wheel set</option>
                 {% for wheel in wheels %}
-                    <option value="{{ wheel.wheel_id }}">{{ wheel.name }}</option>
+                    <option value="{{ wheel._id }}">{{ wheel.name }}</option>
                 {% endfor %}
             </select>
         </div>
