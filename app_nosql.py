@@ -831,28 +831,28 @@ def profile():
     customizations = list(db['customization'].aggregate([
         {'$match': {'user_id': ObjectId(user.id)}},
         {'$lookup': {
-            'from': 'models',
+            'from': 'model',
             'localField': 'model_id',
             'foreignField': '_id',
             'as': 'model'
         }},
         {'$unwind': '$model'},
         {'$lookup': {
-            'from': 'brands',
+            'from': 'brand',
             'localField': 'model.brand_id',
             'foreignField': '_id',
             'as': 'brand'
         }},
         {'$unwind': '$brand'},
         {'$lookup': {
-            'from': 'colors',
+            'from': 'color',
             'localField': 'color_id',
             'foreignField': '_id',
             'as': 'color'
         }},
         {'$unwind': '$color'},
         {'$lookup': {
-            'from': 'wheel_sets',
+            'from': 'wheel_set',
             'localField': 'wheel_set_id',
             'foreignField': '_id',
             'as': 'wheel_set'
@@ -938,14 +938,14 @@ def view_post(post_id):
     post = db['post'].aggregate([
         {'$match': {'_id': ObjectId(post_id)}},
         {'$lookup': {
-            'from': 'users',
+            'from': 'user',
             'localField': 'user_id',
             'foreignField': '_id',
             'as': 'user'
         }},
         {'$unwind': '$user'},
         {'$lookup': {
-            'from': 'customizations',
+            'from': 'customization',
             'localField': 'customization_id',
             'foreignField': '_id',
             'as': 'customization'
@@ -970,7 +970,7 @@ def view_post(post_id):
     comments = list(db['comment'].aggregate([
         {'$match': {'post_id': ObjectId(post_id)}},
         {'$lookup': {
-            'from': 'users',
+            'from': 'user',
             'localField': 'user_id',
             'foreignField': '_id',
             'as': 'user'
@@ -988,31 +988,31 @@ def view_post(post_id):
 
     customization_data = None
     if post.get('customization_id'):
-        customization_data = db['customizations'].aggregate([
+        customization_data = db['customization'].aggregate([
             {'$match': {'_id': post['customization_id']}},
             {'$lookup': {
-                'from': 'models',
+                'from': 'model',
                 'localField': 'model_id',
                 'foreignField': '_id',
                 'as': 'model'
             }},
             {'$unwind': '$model'},
             {'$lookup': {
-                'from': 'brands',
+                'from': 'brand',
                 'localField': 'model.brand_id',
                 'foreignField': '_id',
                 'as': 'brand'
             }},
             {'$unwind': '$brand'},
             {'$lookup': {
-                'from': 'colors',
+                'from': 'color',
                 'localField': 'color_id',
                 'foreignField': '_id',
                 'as': 'color'
             }},
             {'$unwind': '$color'},
             {'$lookup': {
-                'from': 'wheel_sets',
+                'from': 'wheel_set',
                 'localField': 'wheel_set_id',
                 'foreignField': '_id',
                 'as': 'wheel_set'
@@ -1058,13 +1058,13 @@ def create_post():
             'category': category,
             'created_at': datetime.utcnow()
         }
-        db['posts'].insert_one(post)
+        db['post'].insert_one(post)
 
         flash('Post created successfully!')
         return redirect(url_for('forum'))
 
     # Fetch customizations for the current user
-    customizations = list(db['customizations'].find(
+    customizations = list(db['customization'].find(
         {'user_id': ObjectId(current_user.id)},
         {'_id': 1, 'customization_name': 1}
     ))
@@ -1076,14 +1076,14 @@ def posts_by_category(category_name):
     posts = list(db['post'].aggregate([
         {'$match': {'category': category_name}},
         {'$lookup': {
-            'from': 'users',
+            'from': 'user',
             'localField': 'user_id',
             'foreignField': '_id',
             'as': 'user'
         }},
         {'$unwind': '$user'},
         {'$lookup': {
-            'from': 'customizations',
+            'from': 'customization',
             'localField': 'customization_id',
             'foreignField': '_id',
             'as': 'customization'
@@ -1109,28 +1109,28 @@ def posts_by_category(category_name):
             customization_data = db['customization'].aggregate([
                 {'$match': {'_id': post['customization_id']}},
                 {'$lookup': {
-                    'from': 'models',
+                    'from': 'model',
                     'localField': 'model_id',
                     'foreignField': '_id',
                     'as': 'model'
                 }},
                 {'$unwind': '$model'},
                 {'$lookup': {
-                    'from': 'brands',
+                    'from': 'brand',
                     'localField': 'model.brand_id',
                     'foreignField': '_id',
                     'as': 'brand'
                 }},
                 {'$unwind': '$brand'},
                 {'$lookup': {
-                    'from': 'colors',
+                    'from': 'color',
                     'localField': 'color_id',
                     'foreignField': '_id',
                     'as': 'color'
                 }},
                 {'$unwind': '$color'},
                 {'$lookup': {
-                    'from': 'wheel_sets',
+                    'from': 'wheel_set',
                     'localField': 'wheel_set_id',
                     'foreignField': '_id',
                     'as': 'wheel_set'
@@ -1411,7 +1411,7 @@ def search():
         '$or': [
             {'title': regex_query},
             {'description': regex_query},
-            {'comments.content': regex_query}
+            {'comment.content': regex_query} #comments
         ]
     })
 
@@ -1423,13 +1423,13 @@ def search():
             ]
         }},
         {'$lookup': {
-            'from': 'comments',
+            'from': 'comment',
             'localField': '_id',
             'foreignField': 'post_id',
-            'as': 'comments'
+            'as': 'comments' #comments
         }},
         {'$lookup': {
-            'from': 'users',
+            'from': 'user',
             'localField': 'user_id',
             'foreignField': '_id',
             'as': 'user'
@@ -1442,7 +1442,7 @@ def search():
     comments = list(db['comment'].aggregate([
         {'$match': {'content': regex_query}},
         {'$lookup': {
-            'from': 'users',
+            'from': 'user',
             'localField': 'user_id',
             'foreignField': '_id',
             'as': 'user'
