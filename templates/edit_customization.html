@@ -4,7 +4,8 @@
 <h1 class="text-center">Edit Customization</h1>
 
 <div class="container">
-    <form id="edit-customization-form" method="POST" action="{{ url_for('edit_customization', customization_id=customization.customization_id) }}" class="mb-5">
+    <form id="edit-customization-form" method="POST" action="{{ url_for('edit_customization', customization_id=customization['_id']) }}"
+    class="mb-5">
         <div class="form-group">
             <label for="customization_name">Customization Name</label>
             <input type="text" id="customization_name" name="customization_name" class="form-control" 
@@ -15,7 +16,7 @@
             <label for="brand_id">Brand:</label>
             <select name="brand_id" id="brand_id" class="form-control" required>
                 {% for brand in brands %}
-                    <option value="{{ brand.brand_id }}" {% if brand.brand_id == customization.brand_id %}selected{% endif %}>
+                    <option value="{{ brand._id }}" {% if brand.brand_id == customization.brand_id %}selected{% endif %}>
                         {{ brand.name }}
                     </option>
                 {% endfor %}
@@ -27,7 +28,7 @@
             <select name="model_id" id="model_id" class="form-control" required>
                 <option value="" disabled>Select a model</option>
                 {% for model in models %}
-                    <option value="{{ model.model_id }}" {% if model.model_id == customization.model_id %}selected{% endif %}>
+                    <option value="{{ model._id }}" {% if model.model_id == customization.model_id %}selected{% endif %}>
                         {{ model.name }}
                     </option>
                 {% endfor %}
@@ -38,7 +39,7 @@
             <label for="color_id">Color:</label>
             <select name="color_id" id="color_id" class="form-control">
                 {% for color in colors %}
-                    <option value="{{ color.color_id }}" {% if color.color_id == customization.color_id %}selected{% endif %}>
+                    <option value="{{ color._id }}" {% if color.color_id == customization.color_id %}selected{% endif %}>
                         {{ color.name }}
                     </option>
                 {% endfor %}
@@ -49,7 +50,7 @@
             <label for="wheel_id">Wheel Set:</label>
             <select name="wheel_id" id="wheel_id" class="form-control">
                 {% for wheel in wheels %}
-                    <option value="{{ wheel.wheel_id }}" {% if wheel.wheel_id == customization.wheel_id %}selected{% endif %}>
+                    <option value="{{ wheel._id }}" {% if wheel.wheel_id == customization.wheel_id %}selected{% endif %}>
                         {{ wheel.name }}
                     </option>
                 {% endfor %}

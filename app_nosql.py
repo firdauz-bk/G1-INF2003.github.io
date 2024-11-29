@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -10,12 +11,16 @@ import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ILOVEINF2003'
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False  # Avoid redirect issues
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # MongoDB connection
 client = MongoClient("mongodb://localhost:27017/")  # Replace with your MongoDB URI
 db = client['carcraft']
+
+
+toolbar = DebugToolbarExtension(app)
 
 class User(UserMixin):
     def __init__(self, user_id, username, email, password_hash, admin):
