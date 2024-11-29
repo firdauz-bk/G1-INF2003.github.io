@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('DOMContentLoaded', function() {
     const brandSelect = document.getElementById('brand');
+    
     if (brandSelect) {
         brandSelect.addEventListener('change', function() {
             const brandId = this.value;
@@ -31,8 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Add new options
                     data.forEach(model => {
                         const option = document.createElement('option');
-                        option.value = model._id;  // Use model._id instead of model[0]
-                        option.textContent = model.name;  // Use model.name instead of model[1]
+                        option.value = model.model_id;  // Set the correct model_id
+                        option.textContent = model.name;  // Set the model name
                         modelSelect.appendChild(option);
                     });
                     
@@ -43,16 +44,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error fetching models:', error);
-                    const modelSelect = document.getElementById('model');  // Changed from model_id
+                    const modelSelect = document.getElementById('model');
                     modelSelect.innerHTML = '<option value="" disabled selected>Error loading models</option>';
                 });
         });
     }
     
+    // Add listener for model selection change
+    const modelSelect = document.getElementById('model');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', function() {
+            const modelId = this.value;  // Get the value of the selected option (model_id)
+            console.log('Selected Model ID:', modelId);  // Debugging
+            if (modelId) {
+                document.getElementById('model_id').value = modelId;  // Set model_id in hidden field
+            }
+        });
+    }
+
     if (typeof styleDropdowns === 'function') {
         styleDropdowns();
     }
 });
+
 
 
 
