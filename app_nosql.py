@@ -3,6 +3,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from bson.errors import InvalidId
 from bson import ObjectId
 from datetime import datetime
 import time
@@ -153,9 +154,15 @@ def customize():
             # Get form data
             customization_id = request.form.get('customization_id')
             customization_name = request.form.get('customization_name')
-            model_id = ObjectId(request.form['model_id'])
-            color_id = ObjectId(request.form['color_id'])
-            wheel_id = ObjectId(request.form['wheel_id'])
+            
+            # Validate ObjectId fields
+            try:
+                model_id = ObjectId(request.form['model_id'])   
+                color_id = ObjectId(request.form['color_id'])
+                wheel_id = ObjectId(request.form['wheel_id'])
+            except (KeyError, InvalidId):
+                flash('Invalid model, color, or wheel selection!', 'error')
+                return redirect(url_for('customize'))
 
             if not customization_name:
                 flash('Customization name is required!', 'error')
@@ -165,20 +172,34 @@ def customize():
                 'customization_name': customization_name,
                 'model_id': model_id,
                 'color_id': color_id,
-                'wheel_set_id': wheel_id  # Note: Changed from wheel_id to wheel_set_id to match your schema
+                'wheel_set_id': wheel_id  # Ensure consistent schema usage
             }
 
             if customization_id:
                 # Update existing customization
-                db.customization.update_one(
-                    {'_id': ObjectId(customization_id)},
-                    {'$set': customization_data}
-                )
+                try:
+                    db.customization.update_one(
+                        {'_id': ObjectId(customization_id)},
+                        {'$set': customization_data}
+                    )
+                    flash('Customization updated successfully!', 'success')
+                except InvalidId:
+                    flash('Invalid customization ID.', 'error')
             else:
                 # Insert new customization
                 customization_data['user_id'] = ObjectId(current_user.id)
                 db.customization.insert_one(customization_data)
+                flash('New customization created successfully!', 'success')
 
+        # Refresh the page after handling the form
+        return redirect(url_for('customize'))
+
+    # Fetch data for GET request (e.g., for rendering the form)
+    brands = db.brands.find()
+    models = db.models.find()
+    colors = db.colors.find()
+    wheels = db.wheels.find()
+    customizations = db.customization.find({'user_id': ObjectId(current_user.id)})
     # Fetch available options for the form
     brands = list(db.brand.find({}, {'_id': 1, 'name': 1}))
     colors = list(db.color.find({}, {'_id': 1, 'name': 1}))
