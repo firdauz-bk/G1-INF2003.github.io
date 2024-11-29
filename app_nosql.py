@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,6 +8,10 @@ from bson.errors import InvalidId
 from bson import ObjectId
 from datetime import datetime
 import time
+import logging
+import psutil
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ILOVEINF2003'
@@ -92,6 +96,61 @@ class User(UserMixin):
 
     def delete(self):
         db['user'].delete_one({'_id': ObjectId(self.id)})
+
+@app.before_request
+def before_request():
+    """Record the start time and memory for each request."""
+    if request.endpoint and request.endpoint != 'static':  # Skip static files
+        g.start_time = time.time()
+        process = psutil.Process()
+        g.start_memory = process.memory_info().rss / (1024 * 1024)  # Memory in MB
+        logging.info(f"Before request: {request.path}, Memory: {g.start_memory:.2f} MB")
+    else:
+        g.start_time = None
+        g.start_memory = None
+
+@app.after_request
+def after_request(response):
+    """Calculate and log the request duration and memory usage."""
+    if hasattr(g, 'start_time') and g.start_time is not None:
+        g.duration = time.time() - g.start_time  # Calculate duration
+        response.headers['X-Request-Duration'] = f"{g.duration:.4f} seconds"  # Add to headers
+        logging.info(f"Request to {request.path} took {g.duration:.4f} seconds")
+    else:
+        g.duration = None
+        logging.warning(f"Request to {request.path} did not record a start time.")
+    
+    if hasattr(g, 'start_memory') and g.start_memory is not None:
+        process = psutil.Process()
+        end_memory = process.memory_info().rss / (1024 * 1024)  # Memory in MB
+        memory_diff = end_memory - g.start_memory
+        logging.info(f"Request to {request.path} used {memory_diff:.2f} MB (End Memory: {end_memory:.2f} MB)")
+        response.headers['X-Memory-Usage'] = f"{memory_diff:.2f} MB"  # Optional: Add to headers for debugging
+        g.memory_usage = memory_diff
+    else:
+        g.memory_usage = None
+    return response
+
+@app.context_processor
+def inject_performance_metrics():
+    """Inject performance metrics into all templates."""
+    if hasattr(g, 'start_time'):
+        duration = time.time() - g.start_time
+    else:
+        duration = None
+
+    if hasattr(g, 'start_memory'):
+        process = psutil.Process()
+        current_memory = process.memory_info().rss / (1024 * 1024)  # Memory in MB
+        memory_usage = current_memory - g.start_memory
+    else:
+        memory_usage = None
+
+    return {
+        'request_duration': f"{duration:.4f} seconds" if duration is not None else 'unknown',
+        'memory_usage': f"{memory_usage:.2f} MB" if memory_usage is not None else 'unknown'
+    }
+
 
 @login_manager.user_loader
 def load_user(user_id):
