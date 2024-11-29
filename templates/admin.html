@@ -95,6 +95,11 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
+                    <div class="mb-3">
+                        <a href="{{ url_for('create_user_admin') }}" class="btn btn-primary">Create New Users</a>
+                        <button onclick="savepoint()" class="btn btn-success">Create Savepoint</button>
+                        <button onclick="rollback()" class="btn btn-warning">Rollback to Savepoint</button>
+                    </div>
                     <tbody>
                         {% for user in users %}
                         <tr>
@@ -254,5 +259,44 @@
         </main>
     </div>
 </div>
+<script>
+function savepoint() {
+    if (confirm('Create a savepoint of current users state?')) {
+        fetch('{{ url_for("create_savepoint") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Savepoint created successfully!');
+            } else {
+                alert('Error creating savepoint: ' + data.error);
+            }
+        });
+    }
+}
 
+function rollback() {
+    if (confirm('Are you sure you want to rollback to the last savepoint? This will revert all user changes made since then.')) {
+        fetch('{{ url_for("rollback_to_savepoint") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Rollback successful!');
+                window.location.reload();
+            } else {
+                alert('Error rolling back: ' + data.error);
+            }
+        });
+    }
+}
+</script>
 {% endblock %}

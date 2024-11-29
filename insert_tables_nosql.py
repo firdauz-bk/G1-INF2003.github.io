@@ -83,6 +83,11 @@ if __name__ == "__main__":
     client = MongoClient("mongodb://localhost:27017/")  # Replace with your MongoDB URI
     db = client["carcraft"]
 
+    if 'users_savepoints' not in db.list_collection_names():
+        db.create_collection('users_savepoints')
+        # Create an index on timestamp field
+        db.users_savepoints.create_index([('timestamp', -1)])
+
     # Reset collections
     regenerate_collections(db)
 

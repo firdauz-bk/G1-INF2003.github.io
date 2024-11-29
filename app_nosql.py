@@ -20,7 +20,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 # MongoDB connection
-client = MongoClient("mongodb://localhost:27017/")  # Replace with your MongoDB URI
+client = MongoClient("mongodb://localhost:27017/")
 db = client['carcraft']
 
 class User(UserMixin):
@@ -332,7 +332,55 @@ def customize():
 @app.route('/edit_customization/<customization_id>', methods=['GET', 'POST'])
 @login_required
 def edit_customization(customization_id):
-    
+    if request.method == 'POST':
+        if 'delete_id' in request.form:
+            # Handle deletion
+            delete_id = request.form['delete_id']
+            db.customization.delete_one({'_id': ObjectId(delete_id)})
+        else:
+            # Get form data
+            print(request.form)  # Inspect the form data to ensure it's being sent correctly
+
+            customization_id = request.form.get('customization_id')
+            customization_name = request.form.get('customization_name')
+            model_id = ObjectId(request.form['model_id'])
+            color_id = ObjectId(request.form['color_id'])
+            wheel_id = ObjectId(request.form['wheel_id'])
+            
+
+            if not customization_name:
+                flash('Customization name is required!', 'error')
+                return redirect(url_for('customize'))
+
+            customization_data = {
+                'customization_name': customization_name,
+                'model_id': model_id,
+                'color_id': color_id,
+                'wheel_set_id': wheel_id  # Note: Changed from wheel_id to wheel_set_id to match your schema
+            }
+
+            if customization_id:
+                # Update existing customization
+                db.customization.update_one(
+                    {'_id': ObjectId(customization_id)},
+                    {'$set': customization_data}
+                )
+            else:
+                # Insert new customization
+                customization_data['user_id'] = ObjectId(current_user.id)
+                db.customization.insert_one(customization_data)
+                return redirect(url_for('customize'))
+
+    # Fetch available options for the form
+    brands = list(db.brand.find({}, {'_id': 1, 'name': 1}))
+    colors = list(db.color.find({}, {'_id': 1, 'name': 1}))
+    wheels = list(db.wheel_set.find({}, {'_id': 1, 'name': 1}))
+
+    # Fetch models for the first brand if exists
+    models = []
+    if brands:
+        default_brand_id = brands[0]['_id']
+        models = list(db.model.find({'brand_id': default_brand_id}, {'_id': 1, 'name': 1}))
     # Create aggregation pipeline to fetch customization with related model info
     pipeline = [
         {
@@ -494,6 +542,132 @@ def admin():
     
     return render_template('admin.html', users=users, vehicle_types=vehicle_types,
                          brands=brands, models=models, colors=colors, wheel_sets=wheel_sets)
+
+@app.route('/create_user_admin', methods=['GET', 'POST'])
+@login_required
+def create_user_admin():
+    if not current_user.admin:
+        flash('Access denied. Admin privileges required.')
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        is_admin = True if request.form.get('admin') else False
+
+        # Validation
+        if not all([username, email, password, confirm_password]):
+            flash('All fields are required!')
+            return redirect(url_for('create_user_admin'))
+
+        if password != confirm_password:
+            flash('Passwords do not match!')
+            return redirect(url_for('create_user_admin'))
+
+        # Check if username or email already exists
+        if db.users.find_one({'$or': [{'username': username}, {'email': email}]}):
+            flash('Username or email already exists!')
+            return redirect(url_for('create_user_admin'))
+
+        # Start a session for transaction
+        with db.client.start_session() as session:
+            try:
+                with session.start_transaction():
+                    # Create user document
+                    new_user = {
+                        '_id': ObjectId(),
+                        'username': username,
+                        'email': email,
+                        'password': generate_password_hash(password),
+                        'admin': is_admin,
+                        'created_at': datetime()
+                    }
+
+                    # Insert the user
+                    db.users.insert_one(new_user, session=session)
+
+                    # Create any additional user-related documents if needed
+                    # For example, user settings, profile, etc.
+                    user_settings = {
+                        'user_id': new_user['_id'],
+                        'theme': 'default',
+                        'notifications_enabled': True
+                    }
+                    db.user_settings.insert_one(user_settings, session=session)
+
+                    # If we get here, commit the transaction
+                    session.commit_transaction()
+                    flash('User created successfully!')
+                    return redirect(url_for('admin'))
+
+            except Exception as e:
+                # If any error occurs, the transaction will automatically roll back
+                flash(f'Error creating user: {str(e)}')
+                return redirect(url_for('create_user_admin'))
+
+    return render_template('create_user_admin.html')
+
+@app.route('/create_savepoint', methods=['POST'])
+@login_required
+def create_savepoint():
+    if not current_user.admin:
+        return jsonify({'success': False, 'error': 'Access denied'})
+    
+    try:
+        with db.client.start_session() as session:
+            with session.start_transaction():
+                # Get current users
+                current_users = list(db.users.find({}, session=session))
+                
+                # Create savepoint document
+                savepoint = {
+                    'timestamp': datetime(),
+                    'created_by': current_user.id,
+                    'users_state': current_users
+                }
+                
+                # Store the savepoint
+                db.users_savepoints.insert_one(savepoint, session=session)
+                
+                # Keep only the last 5 savepoints
+                old_savepoints = db.users_savepoints.find().sort('timestamp', -1).skip(5)
+                for old_sp in old_savepoints:
+                    db.users_savepoints.delete_one({'_id': old_sp['_id']})
+                
+                return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/rollback_to_savepoint', methods=['POST'])
+@login_required
+def rollback_to_savepoint():
+    if not current_user.admin:
+        return jsonify({'success': False, 'error': 'Access denied'})
+    
+    try:
+        with db.client.start_session() as session:
+            with session.start_transaction():
+                # Get the most recent savepoint
+                latest_savepoint = db.users_savepoints.find_one(
+                    sort=[('timestamp', -1)]
+                )
+                
+                if not latest_savepoint:
+                    return jsonify({'success': False, 'error': 'No savepoint found'})
+                
+                # Delete all current users
+                db.users.delete_many({}, session=session)
+                
+                # Restore users from savepoint
+                users_to_restore = latest_savepoint['users_state']
+                if users_to_restore:
+                    db.users.insert_many(users_to_restore, session=session)
+                
+                return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/create_color', methods=["GET", "POST"])
 @login_required

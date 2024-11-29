@@ -13,9 +13,10 @@
 
         <div class="form-group">
             <label for="brand_id">Brand:</label>
-            <select name="brand_id" id="brand_id" class="form-control" required>
+            <select name="brand_id" id="brand" class="form-control" required>
                 {% for brand in brands %}
-                    <option value="{{ brand._id }}" {% if brand.brand_id == customization.brand_id %}selected{% endif %}>
+                    <option value="{{ brand._id }}" 
+                            {% if brand._id == customization.brand_id %}selected{% endif %}>
                         {{ brand.name }}
                     </option>
                 {% endfor %}
@@ -23,22 +24,18 @@
         </div>
 
         <div class="form-group">
-            <label for="model_id">Model:</label>
-            <select name="model_id" id="model_id" class="form-control" required>
-                <option value="" disabled>Select a model</option>
-                {% for model in models %}
-                    <option value="{{ model._id }}" {% if model.model_id == customization.model_id %}selected{% endif %}>
-                        {{ model.name }}
-                    </option>
-                {% endfor %}
+            <label for="model_i2d">Model:</label>
+            <select id="model" name="model_id" class="form-control">
+                <option value="" disabled selected>Select a model</option>
             </select>
         </div>
 
         <div class="form-group">
             <label for="color_id">Color:</label>
-            <select name="color_id" id="color_id" class="form-control">
+            <select name="color_id" id="color" class="form-control">
                 {% for color in colors %}
-                    <option value="{{ color._id }}" {% if color.color_id == customization.color_id %}selected{% endif %}>
+                    <option value="{{ color._id }}"
+                            {% if color._id == customization.color_id %}selected{% endif %}>
                         {{ color.name }}
                     </option>
                 {% endfor %}
@@ -47,18 +44,25 @@
 
         <div class="form-group">
             <label for="wheel_id">Wheel Set:</label>
-            <select name="wheel_id" id="wheel_id" class="form-control">
+            <select name="wheel_id" id="wheel" class="form-control">
                 {% for wheel in wheels %}
-                    <option value="{{ wheel._id }}" {% if wheel.wheel_id == customization.wheel_id %}selected{% endif %}>
+                    <option value="{{ wheel._id }}"
+                            {% if wheel._id == customization.wheel_set_id %}selected{% endif %}>
                         {{ wheel.name }}
                     </option>
                 {% endfor %}
             </select>
+            {% if customization %}
+            <input type="hidden" name="customization_id" value="{{ customization._id }}">
+        {% endif %}
         </div>
 
         <button type="button" id="preview-button" class="btn btn-secondary">Preview Customization</button>
-        <button type="submit" class="btn btn-primary">Update Customization</button>
+        <button type="submit" class="btn btn-primary">Save Customization</button>
     </form>
+    <h2 id="preview-of-your-customization" class="text-center mb-4">Preview of Your Customization</h2>
+    <div id="car-viewer" class="mb-5"></div>
+
 </div>
 
 <!-- Include the script to handle dynamic model loading -->

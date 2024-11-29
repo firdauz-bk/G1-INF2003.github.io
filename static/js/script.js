@@ -67,9 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-
-
-
 document.getElementById('customization-form').addEventListener('submit', function(event) {
     const modelSelect = document.getElementById('model_id');
     if (!modelSelect.value) {
