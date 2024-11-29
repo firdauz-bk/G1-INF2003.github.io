@@ -133,10 +133,10 @@
 
     function updatePreview() {
         // Collect selected values
-        const brand = $('#brand_id option:selected').text().toLowerCase().replace(/ /g, '_');
-        const model = $('#model_id option:selected').text().toLowerCase().replace(/ /g, '_');
-        const color = $('#color_id option:selected').text().toLowerCase().replace(/ /g, '_');
-        const wheel = $('#wheel_id option:selected').text().toLowerCase().replace(/ /g, '_');
+        const brand = $('#brand option:selected').text().toLowerCase().replace(/ /g, '_');
+        const model = $('#model option:selected').text().toLowerCase().replace(/ /g, '_');
+        const color = $('#color option:selected').text().toLowerCase().replace(/ /g, '_');
+        const wheel = $('#wheel option:selected').text().toLowerCase().replace(/ /g, '_');
 
         // Ensure all selections are made before showing the preview
         if (brand && model && color && wheel) {
